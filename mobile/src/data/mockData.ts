@@ -244,9 +244,9 @@ export const complaintCategories = [
   'Others',
 ];
 
-/** Wallet with enough AST to demo a full bill payment */
+/** Demo AST wallet — no live token API yet, default remaining is 0 */
 export const tokenWallet: TokenWallet = {
-  balance: 3000,
+  balance: 0,
   unit: 'AST', // ASELCO Token — only payment method
 };
 

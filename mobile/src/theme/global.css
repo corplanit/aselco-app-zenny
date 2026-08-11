@@ -142,6 +142,151 @@ h1, h2, h3, .font-display {
   color: var(--aselco-ink-900);
 }
 
+.ledger-account-picker {
+  margin-bottom: 14px;
+}
+
+.ledger-account-picker__label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--aselco-ink-500);
+}
+
+.ledger-account-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ledger-account-card {
+  margin: 0;
+}
+
+.ledger-due-banner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: var(--aselco-radius-soft);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(145deg, #054d24 0%, #0e7c3a 48%, #1aa04b 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(6, 60, 30, 0.22);
+}
+
+.ledger-due-banner .summary-strip__label {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.ledger-due-banner .summary-strip__value {
+  color: #fff;
+  font-size: 18px;
+}
+
+.ledger-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ledger-demo-note,
+.ledger-period {
+  margin: 0;
+  font-size: 12px;
+  color: var(--aselco-ink-500);
+}
+
+ion-button.ledger-icon-btn {
+  margin: 0;
+  flex-shrink: 0;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  height: 36px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --border-radius: 10px;
+}
+
+ion-button.ledger-icon-btn ion-icon {
+  font-size: 18px;
+}
+
+ion-button.ledger-icon-btn ion-spinner {
+  width: 16px;
+  height: 16px;
+}
+
+.ledger-loading {
+  display: grid;
+  place-items: center;
+  padding: 28px 0;
+}
+
+.ledger-pager {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ledger-pager__meta {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--aselco-ink-500);
+}
+
+.ledger-pager__btns {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+ion-modal.ledger-detail-modal {
+  --width: min(440px, 92vw);
+  --height: auto;
+  --max-height: 86vh;
+  --border-radius: 20px;
+  --box-shadow: var(--aselco-shadow-soft);
+  --background: var(--aselco-surface);
+}
+
+.ledger-modal {
+  padding: 22px 20px 24px;
+}
+
+.ledger-modal__kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aselco-green-700);
+}
+
+.ledger-modal__title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--aselco-ink-900);
+}
+
+.ledger-modal__sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--aselco-ink-500);
+}
+
 /* ---------------------------------------------------------
    Soft cards & soft buttons
    --------------------------------------------------------- */
@@ -484,6 +629,113 @@ ion-tabs ion-router-outlet {
   color: var(--aselco-ink-500);
 }
 
+.dash-card__chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 60%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-card__chip--muted {
+  background: var(--aselco-green-050);
+  color: var(--aselco-green-800);
+  border: 1px solid rgba(14, 124, 58, 0.12);
+}
+
+.dash-account-totals {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(14, 124, 58, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-account-totals__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--aselco-green-050);
+}
+
+.dash-account-totals__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--aselco-green-100);
+  color: var(--aselco-green-800);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.dash-account-totals__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-account-totals__acct {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--aselco-ink-900);
+}
+
+.dash-account-totals__meta {
+  display: block;
+  font-size: 11px;
+  color: var(--aselco-ink-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-account-totals__amt {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--aselco-ink-900);
+  flex-shrink: 0;
+}
+
+.service-card {
+  background: var(--aselco-surface);
+  border-radius: var(--aselco-radius-soft);
+  box-shadow: var(--aselco-shadow-soft);
+  border: 1px solid rgba(14, 124, 58, 0.08);
+  padding: 14px 16px 8px;
+}
+
+.service-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.service-card__empty,
+.service-card__note {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--aselco-ink-500);
+}
+
 .token-balance {
   background: var(--aselco-surface);
   border-radius: var(--aselco-radius-soft);
@@ -565,10 +817,26 @@ ion-tabs ion-router-outlet {
   color: var(--aselco-warning);
 }
 
-.status-pill--resolved {
+.status-pill--resolved,
+.status-pill--validated {
   background: var(--aselco-green-100);
   color: var(--aselco-success);
 }
+
+.status-pill--pending {
+  background: #fff4e8;
+  color: var(--aselco-warning);
+}
+
+.status-pill--linked {
+  background: var(--aselco-green-100);
+  color: var(--aselco-success);
+}
+
+.profile-link-another {
+  margin-top: 12px;
+}
+
 
 .empty-state {
   text-align: center;
