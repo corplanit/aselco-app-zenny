@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('menus')) {
+            return;
+        }
+
         Schema::create('menus', function (Blueprint $table) {
             $table->id();
-             $table->string('key')->unique();           // e.g. 'main', 'footer'
+            $table->string('key')->unique();           // e.g. 'main', 'footer'
             $table->string('name');                    // Human label
             $table->text('description')->nullable();
             $table->timestamps();
