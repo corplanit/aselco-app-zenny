@@ -67,7 +67,7 @@ export interface MembershipStatus {
   can_add_another_link?: boolean;
 }
 
-export interface AccountLink { 
+export interface AccountLink {
   id: number;
   account_number: string;
   owner_name: string;
@@ -96,116 +96,4 @@ export interface MembershipPrivacy {
   title: string;
   summary: string;
   body: string;
-}
-
-
-//ZENNY added lines, kay mag-error kung magparun kog npm run build
-
-export interface LinkedAccount {
-  account_no: string;
-  customer: string | null;
-  status: string | null;
-  meter_no: string | null;
-  address: string | null;
-  rate_class: string | null;
-}
-
-export interface ServiceInfo {
-  account_number: string;
-  owner_name: string | null;
-  status: string;
-  meter_no: string | null;
-  address: string | null;
-  rate_class: string | null;
-  source: 'linked_account' | 'account_link';
-}
-
-export interface DashboardConsumer {
-  name: string;
-  email: string;
-  contact_no: string | null;
-}
-
-export interface DashboardBilling {
-  amount_due: number | null;
-  pending_count: number;
-  billing_period: string | null;
-  due_date: string | null;
-  as_of: string;
-  has_data: boolean;
-}
-
-export interface DashboardSummary {
-  consumer: DashboardConsumer;
-  service: ServiceInfo | null;
-  billing: DashboardBilling;
-  linked_accounts: LinkedAccount[];
-  account_links: AccountLink[];
-  wallet: null;
-}
-
-export interface LedgerEntry {
-  id: string | number;
-  type: 'bill' | 'payment';
-  title: string;
-  date: string;
-  posted_at: string;
-  ref: string;
-  amount: number;
-  debit: number;
-  credit: number;
-  kwh: number | null;
-  demand_kw?: number | null;
-  previous_reading?: number | null;
-  present_reading?: number | null;
-  balance?: number | null;
-  bill_month?: string | null;
-  due_date: string | null;
-}
-
-export interface LedgerPagination {
-  page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-  from: number;
-  to: number;
-}
-
-export interface LedgerAccount {
-  account_number: string;
-  consumer_name: string | null;
-  consumer_address: string | null;
-  consumer_status: string | null;
-}
-
-export interface LedgerSummary {
-  account_number: string;
-  current_balance: number;
-  current_due: number;
-  total_paid: number;
-  kwh_used: number;
-  billing_period: string | null;
-  due_date: string | null;
-  pending_count: number;
-}
-
-export interface LedgerHistoryItem {
-  bill_month: string | null;
-  label: string;
-  debit: number;
-  credit: number;
-  kwh: number;
-  balance: number | null;
-  due_date: string | null;
-}
-
-export interface LedgerResponse {
-  account: LedgerAccount;
-  accounts: string[];
-  summary: LedgerSummary;
-  history: LedgerHistoryItem[];
-  entries: LedgerEntry[];
-  sort: 'latest' | 'oldest';
-  pagination?: LedgerPagination;
 }

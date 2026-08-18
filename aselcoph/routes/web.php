@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AccountLinkController;
-use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BillingApiController;
 use App\Http\Controllers\BillingUploadController;
 use App\Http\Controllers\Chats\ConversationController;
@@ -243,13 +242,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
 
     Route::get('/billing-upload', [BillingUploadController::class, 'create'])->name('billing.upload.create');
     Route::post('/billing-upload', [BillingUploadController::class, 'store'])->name('billing.upload.store');
-
-    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
-    Route::get('/announcements/create', [AnnouncementController::class, 'create'])->name('announcements.create');
-    Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
-    Route::post('/announcements/preview-audience', [AnnouncementController::class, 'previewAudience'])->name('announcements.preview');
-    Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->name('announcements.show');
-    Route::post('/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
 
     Route::prefix('/link')->group(function () {
         Route::post('/store', [AccountLinkController::class, 'store'])->name('link.store');
