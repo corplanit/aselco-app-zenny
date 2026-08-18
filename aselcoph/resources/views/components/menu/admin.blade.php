@@ -43,6 +43,13 @@
 <li class="slide__category"><span class="category-name">Manage Services</span></li>
 
 <li class="slide">
+    <a href="/announcements" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-megaphone" style="color: #5D66F7"></i>
+        <span class="side-menu__label">Mobile Announcements</span>
+    </a>
+</li>
+
+<li class="slide">
     <a href="/supp/chat" class="side-menu__item relative" data-unread-badge-anchor="support-messages">
         <i class="w-6 h-4 side-menu__icon bi bi-headset" style="color: #5D66F7"></i>
         <span class="side-menu__label">Customer Support</span>
