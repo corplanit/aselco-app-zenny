@@ -10,6 +10,7 @@ import {
 import * as membershipApi from '../api/membership';
 import type {
   AccountLink,
+  LinkedAccount,
   MembershipStatus,
   StoreAccountLinkPayload,
   StoreAccountLinkResponse,
@@ -28,6 +29,9 @@ interface MembershipContextValue {
   refreshLinks: () => Promise<AccountLink[]>;
   submitLink: (payload: StoreAccountLinkPayload) => Promise<StoreAccountLinkResponse>;
   markStepperComplete: () => void;
+  
+  linkedAccounts: LinkedAccount[];
+  refreshLinkedAccounts: () => Promise<LinkedAccount[]>;
 }
 
 const MembershipContext = createContext<MembershipContextValue | undefined>(undefined);
@@ -47,6 +51,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth();
   const [status, setStatus] = useState<MembershipStatus | null>(null);
   const [links, setLinks] = useState<AccountLink[]>([]);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [linksLoading, setLinksLoading] = useState(false);
 
@@ -66,6 +71,22 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       return [];
     } finally {
       setLinksLoading(false);
+    }
+  }, [token]);
+
+  const refreshLinkedAccounts = useCallback(async () => {
+    if (!token) {
+      setLinkedAccounts([]);
+      return [];
+    }
+
+    try {
+      const result = await membershipApi.listLinkedAccounts(token);
+      const next = result.data ?? [];
+      setLinkedAccounts(next);
+      return next;
+    } catch {
+      return [];
     }
   }, [token]);
 
@@ -105,6 +126,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated || !token) {
       setStatus(null);
       setLinks([]);
+      setLinkedAccounts([]);
       setIsLoading(false);
       setLinksLoading(false);
       return;
@@ -116,18 +138,21 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const [nextStatus, nextLinks] = await Promise.all([
+        const [nextStatus, nextLinks, nextLinkedAccounts] = await Promise.all([
           membershipApi.getMembershipStatus(token),
           membershipApi.listAccountLinks(token),
+          membershipApi.listLinkedAccounts(token),
         ]);
         if (!cancelled) {
           setStatus(nextStatus);
           setLinks(nextLinks.data ?? []);
+          setLinkedAccounts(nextLinkedAccounts.data ?? []);
         }
       } catch {
         if (!cancelled) {
           setStatus(emptyStatus());
           setLinks([]);
+          setLinkedAccounts([]);
         }
       } finally {
         if (!cancelled) {
@@ -192,6 +217,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       links,
+      linkedAccounts,
       isLoading,
       linksLoading,
       needsMembershipStepper: Boolean(isAuthenticated && status?.needs_membership_stepper),
@@ -199,12 +225,14 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
+      refreshLinkedAccounts,
       submitLink,
       markStepperComplete,
     }),
     [
       status,
       links,
+      linkedAccounts,
       isLoading,
       linksLoading,
       isAuthenticated,
@@ -212,6 +240,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
+      refreshLinkedAccounts,
       submitLink,
       markStepperComplete,
     ],
