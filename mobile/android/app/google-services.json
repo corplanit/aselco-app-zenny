@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "946881833537",
+    "project_id": "aslcoapp-notifs",
+    "storage_bucket": "aslcoapp-notifs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:946881833537:android:1f69bea77f02902e0e34c0",
+        "android_client_info": {
+          "package_name": "com.aselco.ph"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKKw0UbGcdmr0K04DtJAU2DJyatB9Xo7s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
