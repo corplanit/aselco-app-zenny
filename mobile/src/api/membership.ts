@@ -1,6 +1,7 @@
 import { apiRequest } from './client';
 import type {
   AccountLink,
+  LinkedAccount,
   MembershipPrivacy,
   MembershipStatus,
   StoreAccountLinkPayload,
@@ -28,4 +29,8 @@ export function submitAccountLink(
     token,
     body: JSON.stringify(payload),
   });
+}
+
+export function listLinkedAccounts(token: string): Promise<{ data: LinkedAccount[] }> {
+  return apiRequest<{ data: LinkedAccount[] }>('/membership/linked-accounts', { token });
 }

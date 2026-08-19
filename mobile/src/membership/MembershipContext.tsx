@@ -10,6 +10,7 @@ import {
 import * as membershipApi from '../api/membership';
 import type {
   AccountLink,
+  LinkedAccount,
   MembershipStatus,
   StoreAccountLinkPayload,
   StoreAccountLinkResponse,
@@ -19,6 +20,7 @@ import { useAuth } from '../auth/AuthContext';
 interface MembershipContextValue {
   status: MembershipStatus | null;
   links: AccountLink[];
+  linkedAccounts: LinkedAccount[];
   isLoading: boolean;
   linksLoading: boolean;
   needsMembershipStepper: boolean;
@@ -26,6 +28,7 @@ interface MembershipContextValue {
   canAddAnotherLink: boolean;
   refreshStatus: () => Promise<MembershipStatus | null>;
   refreshLinks: () => Promise<AccountLink[]>;
+  refreshLinkedAccounts: () => Promise<LinkedAccount[]>;
   submitLink: (payload: StoreAccountLinkPayload) => Promise<StoreAccountLinkResponse>;
   markStepperComplete: () => void;
 }
@@ -47,6 +50,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth();
   const [status, setStatus] = useState<MembershipStatus | null>(null);
   const [links, setLinks] = useState<AccountLink[]>([]);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [linksLoading, setLinksLoading] = useState(false);
 
@@ -59,7 +63,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     setLinksLoading(true);
     try {
       const result = await membershipApi.listAccountLinks(token);
-      const next = result.data ?? [];
+      const next = Array.isArray(result.data) ? result.data : [];
       setLinks(next);
       return next;
     } catch {
@@ -69,10 +73,27 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
+  const refreshLinkedAccounts = useCallback(async () => {
+    if (!token) {
+      setLinkedAccounts([]);
+      return [];
+    }
+
+    try {
+      const result = await membershipApi.listLinkedAccounts(token);
+      const next = Array.isArray(result.data) ? result.data : [];
+      setLinkedAccounts(next);
+      return next;
+    } catch {
+      return [];
+    }
+  }, [token]);
+
   const refreshStatus = useCallback(async () => {
     if (!token) {
       setStatus(null);
       setLinks([]);
+      setLinkedAccounts([]);
       return null;
     }
 
@@ -105,6 +126,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated || !token) {
       setStatus(null);
       setLinks([]);
+      setLinkedAccounts([]);
       setIsLoading(false);
       setLinksLoading(false);
       return;
@@ -116,18 +138,21 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const [nextStatus, nextLinks] = await Promise.all([
+        const [nextStatus, nextLinks, nextLinked] = await Promise.all([
           membershipApi.getMembershipStatus(token),
           membershipApi.listAccountLinks(token),
+          membershipApi.listLinkedAccounts(token).catch(() => ({ data: [] as LinkedAccount[] })),
         ]);
         if (!cancelled) {
           setStatus(nextStatus);
-          setLinks(nextLinks.data ?? []);
+          setLinks(Array.isArray(nextLinks.data) ? nextLinks.data : []);
+          setLinkedAccounts(Array.isArray(nextLinked.data) ? nextLinked.data : []);
         }
       } catch {
         if (!cancelled) {
           setStatus(emptyStatus());
           setLinks([]);
+          setLinkedAccounts([]);
         }
       } finally {
         if (!cancelled) {
@@ -192,6 +217,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       links,
+      linkedAccounts,
       isLoading,
       linksLoading,
       needsMembershipStepper: Boolean(isAuthenticated && status?.needs_membership_stepper),
@@ -199,12 +225,14 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
+      refreshLinkedAccounts,
       submitLink,
       markStepperComplete,
     }),
     [
       status,
       links,
+      linkedAccounts,
       isLoading,
       linksLoading,
       isAuthenticated,
@@ -212,6 +240,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
+      refreshLinkedAccounts,
       submitLink,
       markStepperComplete,
     ],
