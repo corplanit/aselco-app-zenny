@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 
-use Illuminate\Validation\Rule;
-
 class UserController extends Controller
 {
     public function index()
@@ -24,7 +22,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|in:customer,administrator,support',
+            'role' => 'required|in:User,Administrator,Customer Service,Content Manager',
         ]);
 
         // Generate random password
@@ -35,7 +33,6 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
-            'contact_no' => $request->contact_no,
             'password' => Hash::make($rawPassword),
         ]);
 
@@ -49,22 +46,14 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['required', Rule::in(['customer', 'administrator', 'support'])],
-            'email_validated' => ['required', Rule::in(['0', '1'])],
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email',
+            'role' => 'required|in:User,Administrator,Customer Service,Content Manager',
         ]);
 
-        $payload = [
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'role' => $validated['role'],
-            'email_verified_at' => $validated['email_validated'] === '1' ? now() : null,
-        ];
-
-        $user->update($payload);
-        return redirect()->back()->with('success', 'Account updated successfully.');
+        $user->update($request->only('name', 'email', 'role'));
+        return redirect()->back()->with('success', 'Account Updated successfully.');
     }
 
     public function datatable(Request $request)
@@ -77,7 +66,7 @@ class UserController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'role' => ucwords($user->role),
+                        'role' => $user->role,
                         'email_verified_at' => $user->email_verified_at,
                         'created_at' => $user->created_at->format('Y-m-d'),
                         'status' => 'Active', // or logic based on your system

@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "io.ionic.starter.app-mergeDebugResources-26:/values-v29/values-v29.xml",
+            "outputFile": "io.ionic.starter.app-mergeDebugResources-35:/values-v29/values-v29.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Zenny\\.gradle\\caches\\8.14.3\\transforms\\4f5eb2e1ae45a07736e2f6ed862ea36a\\transformed\\core-splashscreen-1.2.0\\res\\values-v29\\values-v29.xml",
+                    "source": "C:\\Users\\Zenny\\.gradle\\caches\\9.0.0\\transforms\\9b33b4b02c11e38ddf0d3a7da74b56c6\\transformed\\jetified-core-splashscreen-1.2.0\\res\\values-v29\\values-v29.xml",
                     "from": {
                         "startLines": "2,8",
                         "startColumns": "4,4",

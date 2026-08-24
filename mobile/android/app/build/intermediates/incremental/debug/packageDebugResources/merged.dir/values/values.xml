@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
-    <string name="app_name">mobile</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="title_activity_main">mobile</string>
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <string name="app_name">myASELCO</string>
+    <string name="custom_url_scheme">com.aselco.ph</string>
+    <string name="gcm_defaultSenderId" translatable="false">946881833537</string>
+    <string name="google_api_key" translatable="false">AIzaSyDKKw0UbGcdmr0K04DtJAU2DJyatB9Xo7s</string>
+    <string name="google_app_id" translatable="false">1:946881833537:android:1f69bea77f02902e0e34c0</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDKKw0UbGcdmr0K04DtJAU2DJyatB9Xo7s</string>
+    <string name="google_storage_bucket" translatable="false">aslcoapp-notifs.firebasestorage.app</string>
+    <string name="package_name">com.aselco.ph</string>
+    <string name="project_id" translatable="false">aslcoapp-notifs</string>
+    <string name="title_activity_main">myASELCO</string>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#3880FF</item>
     </style>
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:background">@null</item>
-    </style>
-    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+    <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#FFFFFF</item>
     </style>
 </resources>

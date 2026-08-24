@@ -47,7 +47,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Mobile personal access tokens expire after 30 days (web sessions use SESSION_LIFETIME).
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------

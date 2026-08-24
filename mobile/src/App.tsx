@@ -1,6 +1,7 @@
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Redirect, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { MembershipProvider, useMembership } from './membership/MembershipContext';
 import { OnboardingProvider, useOnboarding } from './onboarding/OnboardingContext';
@@ -15,6 +16,7 @@ import Walkthrough from './pages/onboarding/Walkthrough';
 import Welcome from './pages/onboarding/Welcome';
 import Register from './pages/Register';
 import Support from './pages/Support';
+import { initializePushNotifications } from './notifications/pushNotifications';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -144,6 +146,16 @@ const AppRoutes: React.FC = () => {
   );
 };
 
+const PushNotificationRegistration: React.FC = () => {
+  const { token } = useAuth();
+
+  useEffect(() => {
+    void initializePushNotifications(token);
+  }, [token]);
+
+  return null;
+};
+
 /**
  * App shell:
  * - Splash on every cold start
@@ -152,18 +164,21 @@ const AppRoutes: React.FC = () => {
  * - Authenticated without membership info → /membership/setup (blocks dashboard)
  * - Authenticated with membership submitted → /tabs/*
  */
-const App: React.FC = () => (
-  <IonApp>
-    <AuthProvider>
-      <OnboardingProvider>
-        <MembershipProvider>
-          <IonReactRouter>
-            <AppRoutes />
-          </IonReactRouter>
-        </MembershipProvider>
-      </OnboardingProvider>
-    </AuthProvider>
-  </IonApp>
-);
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <AuthProvider>
+        <PushNotificationRegistration />
+        <OnboardingProvider>
+          <MembershipProvider>
+            <IonReactRouter>
+              <AppRoutes />
+            </IonReactRouter>
+          </MembershipProvider>
+        </OnboardingProvider>
+      </AuthProvider>
+    </IonApp>
+  );
+};
 
 export default App;

@@ -33,15 +33,21 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-	
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
-	
-	'aselco_ledger' => [
+
+    'aselco_ledger' => [
         'url' => env('ASELCO_LEDGER_URL', 'https://coop.eduisbotswave.com/AselcoCollection/GetConsumersLeger'),
         'timeout' => (int) env('ASELCO_LEDGER_TIMEOUT', 20),
+        'api_key' => env('ASELCO_LEDGER_API_KEY'),
+        'api_key_header' => env('ASELCO_LEDGER_API_KEY_HEADER', 'X-API-Key'),
+    ],
+
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS'),
     ],
 ];

@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountLink;
 use App\Models\TAccountRaw;
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class LedgerController extends Controller
@@ -23,17 +25,21 @@ class LedgerController extends Controller
         $allowed = $this->allowedAccountNumbers($userId);
 
         if ($allowed === []) {
-            return response()->json([
-                'message' => 'No electric account is linked to this member yet.',
-            ], 404);
+            return $this->ledgerError(
+                'LEDGER_NO_LINKED_ACCOUNT',
+                'No electric account is linked to this member yet.',
+                404
+            );
         }
 
         $requested = trim((string) $request->query('account_number', ''));
         if ($requested !== '') {
             if (! in_array($requested, $allowed, true)) {
-                return response()->json([
-                    'message' => 'That account number is not linked to your profile.',
-                ], 403);
+                return $this->ledgerError(
+                    'LEDGER_ACCOUNT_FORBIDDEN',
+                    'That account number is not linked to your profile.',
+                    403
+                );
             }
             $accountNumber = $requested;
         } else {
@@ -42,16 +48,41 @@ class LedgerController extends Controller
 
         try {
             $record = $this->fetchExternalLedger($accountNumber);
+        } catch (ConnectionException $e) {
+            Log::warning('aselco_ledger.timeout', [
+                'account_number' => $accountNumber,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $this->ledgerError(
+                'LEDGER_UPSTREAM_TIMEOUT',
+                'The cooperative ledger timed out. Try again shortly.',
+                504
+            );
         } catch (Throwable $e) {
-            return response()->json([
-                'message' => 'Could not load the cooperative ledger. Try again shortly.',
-            ], 502);
+            $code = $e->getCode() === 404 ? 'LEDGER_ACCOUNT_EMPTY' : 'LEDGER_UPSTREAM_UNAVAILABLE';
+            $status = $e->getCode() === 404 ? 404 : 502;
+
+            Log::warning('aselco_ledger.upstream_failed', [
+                'account_number' => $accountNumber,
+                'code' => $code,
+                'message' => $e->getMessage(),
+            ]);
+
+            return $this->ledgerError(
+                $code,
+                $status === 404
+                    ? 'No ledger data was found for this account.'
+                    : 'Could not load the cooperative ledger. Try again shortly.',
+                $status
+            );
         }
 
         $details = is_array($record['details'] ?? null) ? $record['details'] : [];
         $entries = $this->mapEntries($details);
         $history = $this->mapHistory($details);
         $summary = $this->mapSummary($accountNumber, $record, $details, $history);
+        $consumer = $this->mapConsumer($accountNumber, $record);
 
         $sort = $request->query('sort', 'latest') === 'oldest' ? 'oldest' : 'latest';
         usort($entries, function (array $a, array $b) use ($sort) {
@@ -85,11 +116,12 @@ class LedgerController extends Controller
 
         return response()->json([
             'account' => [
-                'account_number' => (string) ($record['consumerId'] ?? $accountNumber),
-                'consumer_name' => $record['consumerName'] ?? null,
-                'consumer_address' => $record['consumerAddress'] ?? null,
-                'consumer_status' => $record['consumerStatus'] ?? null,
+                'account_number' => $consumer['account_number'],
+                'consumer_name' => $consumer['name'],
+                'consumer_address' => $consumer['address'],
+                'consumer_status' => $consumer['status'],
             ],
+            'consumer' => $consumer,
             'accounts' => $allowed,
             'summary' => $summary,
             'history' => $history,
@@ -143,17 +175,29 @@ class LedgerController extends Controller
         $timeout = (int) config('services.aselco_ledger.timeout', 20);
         $url = $base.'/'.rawurlencode($accountNumber);
 
-        $response = Http::acceptJson()
-            ->timeout($timeout)
-            ->get($url);
+        $pending = Http::acceptJson()->timeout($timeout);
+        $apiKey = trim((string) config('services.aselco_ledger.api_key', ''));
+        if ($apiKey !== '') {
+            $header = (string) config('services.aselco_ledger.api_key_header', 'X-API-Key');
+            $pending = $pending->withHeaders([$header => $apiKey]);
+        }
+
+        $response = $pending->get($url);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('Ledger upstream returned HTTP '.$response->status());
+            Log::warning('aselco_ledger.http_error', [
+                'account_number' => $accountNumber,
+                'status' => $response->status(),
+            ]);
+            throw new \RuntimeException(
+                'Ledger upstream returned HTTP '.$response->status(),
+                $response->status() === 404 ? 404 : 502
+            );
         }
 
         $json = $response->json();
         if (! is_array($json) || $json === []) {
-            throw new \RuntimeException('Ledger upstream returned no data.');
+            throw new \RuntimeException('Ledger upstream returned no data.', 404);
         }
 
         $rows = array_is_list($json) ? $json : [$json];
@@ -168,8 +212,37 @@ class LedgerController extends Controller
         }
 
         $first = $rows[0] ?? null;
+        if (! is_array($first) || $first === []) {
+            throw new \RuntimeException('Ledger upstream returned empty account payload.', 404);
+        }
 
-        return is_array($first) ? $first : [];
+        return $first;
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     * @return array<string, mixed>
+     */
+    private function mapConsumer(string $accountNumber, array $record): array
+    {
+        $name = $this->nullableString($record['consumerName'] ?? null);
+        $address = $this->nullableString($record['consumerAddress'] ?? null);
+        $status = $this->nullableString($record['consumerStatus'] ?? null);
+        $meterNo = $this->nullableString(
+            $record['meterNo'] ?? $record['meter_no'] ?? $record['meterNumber'] ?? null
+        );
+        $rateClass = $this->nullableString(
+            $record['rateClass'] ?? $record['rate_class'] ?? null
+        );
+
+        return [
+            'account_number' => (string) ($record['consumerId'] ?? $accountNumber),
+            'name' => $name,
+            'address' => $address,
+            'status' => $status,
+            'meter_no' => $meterNo,
+            'rate_class' => $rateClass,
+        ];
     }
 
     /**
@@ -185,8 +258,8 @@ class LedgerController extends Controller
                 continue;
             }
 
-            $debit = (float) ($row['debit'] ?? 0);
-            $credit = (float) ($row['credit'] ?? 0);
+            $debit = $this->safeFloat($row['debit'] ?? null);
+            $credit = $this->safeFloat($row['credit'] ?? null);
             $isPayment = $credit > 0 && $credit >= $debit;
             $billMonth = isset($row['billMonth']) ? (string) $row['billMonth'] : null;
             $postedAt = $this->entryCarbon($row);
@@ -238,11 +311,11 @@ class LedgerController extends Controller
                     'due_date' => $this->dueDateFromBillMonth($key),
                 ];
             }
-            $groups[$key]['debit'] += (float) ($row['debit'] ?? 0);
-            $groups[$key]['credit'] += (float) ($row['credit'] ?? 0);
-            $groups[$key]['kwh'] += (float) ($row['kwhUsed'] ?? 0);
+            $groups[$key]['debit'] += $this->safeFloat($row['debit'] ?? null);
+            $groups[$key]['credit'] += $this->safeFloat($row['credit'] ?? null);
+            $groups[$key]['kwh'] += $this->safeFloat($row['kwhUsed'] ?? null);
             if (isset($row['balance']) && $row['balance'] !== null && $row['balance'] !== '') {
-                $groups[$key]['balance'] = (float) $row['balance'];
+                $groups[$key]['balance'] = $this->safeFloat($row['balance']);
             }
         }
 
@@ -279,8 +352,8 @@ class LedgerController extends Controller
             if (! is_array($row)) {
                 continue;
             }
-            $debit = (float) ($row['debit'] ?? 0);
-            $credit = (float) ($row['credit'] ?? 0);
+            $debit = $this->safeFloat($row['debit'] ?? null);
+            $credit = $this->safeFloat($row['credit'] ?? null);
             $totalDebit += $debit;
             $totalCredit += $credit;
             $billMonth = (string) ($row['billMonth'] ?? '');
@@ -288,7 +361,7 @@ class LedgerController extends Controller
                 $paidYtd += $credit;
             }
             if (isset($row['balance']) && $row['balance'] !== null && $row['balance'] !== '') {
-                $closingBalance = (float) $row['balance'];
+                $closingBalance = $this->safeFloat($row['balance']);
             }
         }
 
@@ -393,7 +466,33 @@ class LedgerController extends Controller
         if ($value === null || $value === '') {
             return null;
         }
+        if (! is_numeric($value)) {
+            return null;
+        }
 
         return (float) $value;
+    }
+
+    private function safeFloat(mixed $value): float
+    {
+        return $this->nullableNumber($value) ?? 0.0;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function ledgerError(string $code, string $message, int $status): JsonResponse
+    {
+        return response()->json([
+            'message' => $message,
+            'code' => $code,
+        ], $status);
     }
 }

@@ -18,5 +18,8 @@ class TAccountRaw extends Model
         'user_id',
         'status',
         'isDeleted',
+        'meter_no',
+        'address',
+        'rate_class',
     ];
 }

@@ -7,9 +7,10 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | Allows the Ionic Vite dev server (and similar local origins) to call the
-    | mobile API with Bearer tokens. Native Capacitor builds are less sensitive
-    | to CORS; do not add Capacitor origins to Sanctum stateful domains.
+    | Allows Ionic Vite + Capacitor WebView origins to call the mobile API with
+    | Bearer tokens. Capacitor Android (androidScheme: https) sends Origin
+    | https://localhost; iOS often uses capacitor://localhost.
+    | Do not add Capacitor origins to Sanctum stateful domains.
     |
     */
 
@@ -19,7 +20,10 @@ return [
 
     'allowed_origins' => array_values(array_filter(array_map(
         'trim',
-        explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173'))
+        explode(',', env(
+            'CORS_ALLOWED_ORIGINS',
+            'http://localhost:5173,http://127.0.0.1:5173,https://localhost,capacitor://localhost,http://localhost'
+        ))
     ))),
 
     'allowed_origins_patterns' => [],
