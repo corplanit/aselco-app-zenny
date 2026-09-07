@@ -38,6 +38,12 @@
                                 <span class="bi bi-unlock"></span>
                                 Change Password
                             </a>
+                            <a class="w-full sm:w-auto hs-tab-active:font-semibold hs-tab-active:border-primary hs-tab-active:text-primary py-4 px-1 inline-flex items-center gap-2 border-b-[3px] border-transparent text-sm whitespace-nowrap text-defaulttextcolor dark:text-[#8c9097] dark:text-white/50 hover:text-primary"
+                                href="javascript:void(0);" id="icon-item-4" data-hs-tab="#icon-4"
+                                aria-controls="icon-4">
+                                <span class="bi bi-wallet2"></span>
+                                AST Wallet
+                            </a>
                         </nav>
                     </div>
 
@@ -202,6 +208,36 @@
                             </div>
                         </div>
 
+                        <div id="icon-4" class="hidden" role="tabpanel" aria-labelledby="icon-item-4">
+                            <div class="text-gray-500 p-5 border rounded-sm border-gray-200">
+                                <p class="text-sm mb-3">
+                                    Load ASELCO Tokens (1 AST ≈ ₱1) into this electric account. The member can pay bills in the mobile app.
+                                </p>
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <div class="text-xs uppercase tracking-wide">Current balance</div>
+                                        <div id="ast_wallet_balance" class="text-2xl font-semibold text-dark">0.00 AST</div>
+                                    </div>
+                                    <button type="button" id="ast_wallet_refresh" class="ti-btn ti-btn-light ti-btn-sm">
+                                        Refresh
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount to load (AST)</label>
+                                    <input type="number" min="0.01" step="0.01" id="ast_load_amount"
+                                        class="ti-form-input" placeholder="0.00">
+                                </div>
+                                <div id="ast_wallet_msg" class="text-sm text-red-600 mb-2"></div>
+                                <button type="button" id="ast_load_btn" class="ti-btn ti-btn-primary">
+                                    Load AST
+                                </button>
+                                <div class="mt-4">
+                                    <div class="text-xs uppercase tracking-wide mb-2">Recent activity</div>
+                                    <ul id="ast_wallet_entries" class="text-sm space-y-1"></ul>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="icon-3" class="hidden" role="tabpanel" aria-labelledby="icon-item-3">
                             <div
                                 class="text-gray-500 dark:text-[#8c9097] dark:text-white/50 p-5 border rounded-sm dark:border-white/10 border-gray-200">
@@ -255,3 +291,81 @@
         </div>
     </div>
 </div>
+
+<script>
+    window.loadAstWalletTab = function(accountNumber) {
+        const acct = (accountNumber || $('#d_account_no').val() || '').toString().trim();
+        const $balance = $('#ast_wallet_balance');
+        const $entries = $('#ast_wallet_entries');
+        const $msg = $('#ast_wallet_msg');
+        $msg.text('');
+        if (!acct) {
+            $balance.text('0.00 AST');
+            $entries.html('<li>Select a consumer first.</li>');
+            return;
+        }
+        $balance.text('Loading…');
+        $.get("{{ route('ast.wallet.show') }}", { account_number: acct }, function(res) {
+            const bal = Number(res.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+            $balance.text(bal + ' AST');
+            if (!res.entries || !res.entries.length) {
+                $entries.html('<li>No AST activity yet.</li>');
+                return;
+            }
+            $entries.html(res.entries.map(function(entry) {
+                return '<li><strong>' + entry.type + '</strong> ' +
+                    Number(entry.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 }) +
+                    ' · ' + (entry.reference || '') + ' · ' + (entry.cis_status || '') + '</li>';
+            }).join(''));
+        }).fail(function(xhr) {
+            $balance.text('0.00 AST');
+            $msg.text(xhr.responseJSON?.message || 'Unable to load AST wallet.');
+        });
+    };
+
+    $('#ast_wallet_refresh').on('click', function() {
+        window.loadAstWalletTab($('#d_account_no').val());
+    });
+
+    $('#ast_load_btn').on('click', function() {
+        const $btn = $(this);
+        const accountNumber = ($('#d_account_no').val() || '').toString().trim();
+        const amount = ($('#ast_load_amount').val() || '').toString().trim();
+        const $msg = $('#ast_wallet_msg');
+        $msg.text('');
+        if (!accountNumber || !amount) {
+            $msg.text('Account number and amount are required.');
+            return;
+        }
+        $btn.prop('disabled', true);
+        $.ajax({
+            url: "{{ route('ast.load') }}",
+            type: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Idempotency-Key': (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('load-' + Date.now())
+            },
+            data: {
+                account_number: accountNumber,
+                amount: amount
+            },
+            success: function(res) {
+                $('#ast_load_amount').val('');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'AST loaded',
+                    text: res.message + ' Balance: ' + Number(res.balance || 0).toFixed(2) + ' AST',
+                    timer: 2200,
+                    showConfirmButton: false
+                });
+                window.loadAstWalletTab(accountNumber);
+            },
+            error: function(xhr) {
+                $msg.text(xhr.responseJSON?.message || 'Failed to load AST.');
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+            }
+        });
+    });
+</script>

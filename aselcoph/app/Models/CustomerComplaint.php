@@ -18,6 +18,8 @@ class CustomerComplaint extends Model
         'complaint',
         'attachment',
         'user_id',
-        'status'
+        'status',
+        'reference_number',
+        'priority',
     ];
 }

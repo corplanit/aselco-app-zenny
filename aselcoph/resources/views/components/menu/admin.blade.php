@@ -1,42 +1,42 @@
 <li class="slide">
     <a href="/calendar" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-calendar-event" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-calendar-event" ></i>
         <span class="side-menu__label">Calendar Activities</span>
     </a>
 </li>
+{{-- Customer Relationship is covered by User Management (Customers + account links).
 <li class="slide__category"><span class="category-name">Customer Relationsip</span></li>
 <li class="slide">
-    <a href="/consumer/list" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-people" style="color: #5D66F7"></i>
+    <a href="{{ route('consumer.list') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-people" ></i>
         <span class="side-menu__label">List of Consumers</span>
     </a>
 </li>
 <li class="slide">
     <a href="/validation" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-people" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-people" ></i>
         <span class="side-menu__label">
             Account Request
             @php
-                $count = App\Models\AccountLink::whereNull('validated_by', '')->count();
+                $count = App\Models\AccountLink::whereNull('validated_by')->count();
             @endphp
             @if ($count)
-                <span class="mx-2 translate-middle badge !rounded-full bg-danger">
-                    {{ $count }}
-                </span>
+                <span class="side-menu__badge badge !rounded-full bg-danger">{{ $count }}</span>
             @endif
         </span>
     </a>
 </li>
+--}}
 {{-- <li class="slide__category"><span class="category-name">Content Management</span></li>
 <li class="slide">
     <a href="/ublog" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-newspaper" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-newspaper" ></i>
         <span class="side-menu__label">List of Articles</span>
     </a>
 </li>
 <li class="slide">
     <a href="/ublog/new" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-pencil-square" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-pencil-square" ></i>
         <span class="side-menu__label">Create New Article</span>
     </a>
 </li> --}}
@@ -44,67 +44,148 @@
 
 <li class="slide">
     <a href="/announcements" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-megaphone" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-megaphone" ></i>
         <span class="side-menu__label">Mobile Announcements</span>
     </a>
 </li>
 
+@include('components.menu._support-chat')
+
+@include('components.menu.tickets')
 <li class="slide">
-    <a href="/supp/chat" class="side-menu__item relative" data-unread-badge-anchor="support-messages">
-        <i class="w-6 h-4 side-menu__icon bi bi-headset" style="color: #5D66F7"></i>
-        <span class="side-menu__label">Customer Support</span>
-
-        @php
-            $uid = Auth::id();
-            $unread = 0;
-
-            if (Auth::user()->role == 'support' || Auth::user()->role == 'administrator') {
-                $parts = \App\Models\SuppParticipant::query()
-                    ->where('user_id', $uid)
-                    ->get(['conversation_id', 'last_read_message_id']);
-
-                foreach ($parts as $p) {
-                    $q = \App\Models\SuppMessage::query()
-                        ->where('conversation_id', $p->conversation_id)
-                        ->where('user_id', '!=', $uid);
-
-                    if ($p->last_read_message_id) {
-                        $q->where('id', '>', $p->last_read_message_id);
-                    }
-
-                    $unread += $q->count();
-                }
-            }
-        @endphp
-
-        <span id="count_unread_msg" class="translate-middle badge !rounded-full bg-danger absolute top-0 end-0"
-            style="{{ $unread > 0 ? '' : 'display:none' }}">
-            {{ $unread > 9 ? '9+' : $unread }}
+    <a href="/complaint" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-hand-index" ></i>
+        <span class="side-menu__label">Legacy Complaints</span>
+    </a>
+</li>
+<li class="slide__category"><span class="category-name">AST Wallet</span></li>
+<li class="slide">
+    <a href="{{ route('ast.admin.dashboard') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-wallet2" ></i>
+        <span class="side-menu__label">Wallet Dashboard</span>
+    </a>
+</li>
+<li class="slide">
+    <a href="{{ route('ast.admin.request') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-send" ></i>
+        <span class="side-menu__label">Request AST</span>
+    </a>
+</li>
+@can('wallet.load')
+<li class="slide">
+    <a href="{{ route('ast.admin.load') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-plus-circle" ></i>
+        <span class="side-menu__label">Load AST</span>
+    </a>
+</li>
+<li class="slide">
+    <a href="{{ route('ast.admin.load', ['mode' => 'reduce']) }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-sliders" ></i>
+        <span class="side-menu__label">Adjust AST</span>
+    </a>
+</li>
+@endcan
+<li class="slide">
+    <a href="{{ route('ast.admin.load-requests') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-clock-history" ></i>
+        <span class="side-menu__label">
+            Load Requests
+            @php
+                $_pendingLoads = \App\Models\WalletLoadRequest::where('status', 'pending')->count();
+            @endphp
+            @if($_pendingLoads > 0)
+                <span class="side-menu__badge badge !rounded-full bg-warning text-dark">{{ $_pendingLoads }}</span>
+            @endif
         </span>
     </a>
 </li>
-
 <li class="slide">
-    <a href="/complaint" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-hand-index" style="color: #5D66F7"></i>
-        <span class="side-menu__label">Customer Complaint</span>
+    <a href="{{ route('ast.cis.queue') }}" class="side-menu__item">
+        <i class="w-6 h-4 side-menu__icon bi bi-arrow-left-right" ></i>
+        <span class="side-menu__label">AST CIS Queue</span>
     </a>
 </li>
 <li class="slide">
     <a href="#" onclick="openUpdateSwal()" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-graph-up-arrow" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-graph-up-arrow" ></i>
         <span class="side-menu__label">Satisfaction Survey</span>
     </a>
 </li>
-</li>
 
+@can('tickets.view')
+<li class="slide__category"><span class="category-name">Support Workspace</span></li>
+<li class="slide"><a href="{{ route('workspace.sla') }}" class="side-menu__item"><i class="w-6 h-4 side-menu__icon bi bi-clock-history"></i><span class="side-menu__label">SLA Monitoring @include('components.menu._sla-count')</span></a></li>
+<li class="slide"><a href="{{ route('workspace.notifications') }}" class="side-menu__item"><i class="w-6 h-4 side-menu__icon bi bi-bell"></i><span class="side-menu__label">Notifications</span></a></li>
+@endcan
+@can('users.view')
+@php
+    $accessOpen = request()->routeIs('access.*');
+    $accessGroups = [
+        [
+            'label' => 'Accounts',
+            'items' => [
+                ['route' => 'access.users.index', 'match' => 'access.users.*', 'label' => 'Users', 'icon' => 'bi-people', 'can' => 'users.view'],
+                ['route' => 'access.customers.index', 'match' => 'access.customers.*', 'label' => 'Customers', 'icon' => 'bi-person', 'can' => 'customers.view'],
+                ['route' => 'access.support.index', 'match' => 'access.support.*', 'label' => 'Support', 'icon' => 'bi-headset', 'can' => 'users.view'],
+            ],
+        ],
+        [
+            'label' => 'Organization',
+            'items' => [
+                ['route' => 'access.departments.index', 'match' => 'access.departments.*', 'label' => 'Departments', 'icon' => 'bi-diagram-3', 'can' => 'departments.view'],
+                ['route' => 'access.roles.index', 'match' => 'access.roles.*', 'label' => 'Roles', 'icon' => 'bi-shield', 'can' => 'roles.view'],
+                ['route' => 'access.permissions.index', 'match' => 'access.permissions.*', 'label' => 'Permissions', 'icon' => 'bi-key', 'can' => 'permissions.view'],
+            ],
+        ],
+        [
+            'label' => 'Operations',
+            'items' => [
+                ['route' => 'access.availability.index', 'match' => 'access.availability.*', 'label' => 'Availability', 'icon' => 'bi-person-check', 'can' => 'users.view'],
+                ['route' => 'access.assignments.index', 'match' => 'access.assignments.*', 'label' => 'Assignments', 'icon' => 'bi-ticket-detailed', 'can' => 'tickets.view'],
+                ['route' => 'access.reports.index', 'match' => 'access.reports.*', 'label' => 'Reports', 'icon' => 'bi-bar-chart', 'can' => 'reports.view'],
+            ],
+        ],
+        [
+            'label' => 'Security',
+            'items' => [
+                ['route' => 'access.sessions.index', 'match' => 'access.sessions.*', 'label' => 'Sessions', 'icon' => 'bi-laptop', 'can' => 'sessions.view'],
+                ['route' => 'access.activity.index', 'match' => 'access.activity.*', 'label' => 'Activity', 'icon' => 'bi-clock-history', 'can' => 'audit.view'],
+                ['route' => 'access.settings.index', 'match' => 'access.settings.*', 'label' => 'Settings', 'icon' => 'bi-gear', 'can' => 'settings.view'],
+            ],
+        ],
+    ];
+@endphp
 <li class="slide__category"><span class="category-name">User Management</span></li>
-<li class="slide">
-    <a href="/users" class="side-menu__item">
-        <i class="w-6 h-4 side-menu__icon bi bi-person-gear" style="color: #5D66F7"></i>
+<li class="slide has-sub {{ $accessOpen ? 'open' : '' }}">
+    <a href="javascript:void(0);" class="side-menu__item {{ $accessOpen ? 'active-parent-menu' : '' }}">
+        <i class="ri-arrow-down-s-line side-menu__angle"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-person-gear"></i>
         <span class="side-menu__label">User Management</span>
     </a>
+    <ul class="slide-menu child1 ul-side-sub">
+        @foreach($accessGroups as $group)
+            @php
+                $visible = collect($group['items'])->first(fn ($item) => Auth::user()?->can($item['can']));
+            @endphp
+            @if($visible)
+                <li class="ul-side-sub-label">
+                    <span class="ul-side-sub-label-text">{{ $group['label'] }}</span>
+                </li>
+                @foreach($group['items'] as $item)
+                    @can($item['can'])
+                        <li class="slide">
+                            <a href="{{ route($item['route']) }}" class="side-menu__item {{ request()->routeIs($item['match']) ? 'active' : '' }}">
+                                <i class="side-menu__icon bi {{ $item['icon'] }}" aria-hidden="true"></i>
+                                <span class="side-menu__label">{{ $item['label'] }}</span>
+                            </a>
+                        </li>
+                    @endcan
+                @endforeach
+            @endif
+        @endforeach
+    </ul>
 </li>
+@endcan
 
 <script>
 function openUpdateSwal() {
@@ -209,7 +290,7 @@ function openUpdateSwal() {
 <li class="slide has-sub" id="profit-tracker-menu">
     <a href="javascript:void(0);" class="side-menu__item">
         <i class="ri-arrow-down-s-line side-menu__angle"></i>
-        <i class="w-6 h-4 side-menu__icon bi bi-globe-americas" style="color: #5D66F7"></i>
+        <i class="w-6 h-4 side-menu__icon bi bi-globe-americas" ></i>
         <span class="side-menu__label">Landing Page</span>
     </a>
     <ul class="slide-menu child1" style="padding-left: 10px">

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Services\Access\AccessService;
 use Illuminate\Validation\Rules\Password;
 
 trait PasswordValidationRules
@@ -13,6 +14,12 @@ trait PasswordValidationRules
      */
     protected function passwordRules(): array
     {
-        return ['required', 'string', Password::default(), 'confirmed'];
+        $min = (int) (app(AccessService::class)->setting('password_min_length', config('access.password_min_length', 8)));
+        $rule = Password::min($min);
+        if (app(AccessService::class)->setting('password_require_mixed', config('access.password_require_mixed', true))) {
+            $rule = $rule->mixedCase()->numbers();
+        }
+
+        return ['required', 'string', $rule, 'confirmed'];
     }
 }

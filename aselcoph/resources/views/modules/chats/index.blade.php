@@ -422,7 +422,7 @@
 
             {{-- Input --}}
             <form id="chat-form"
-                  class="border-t px-3 py-2 flex flex-col gap-2 bg-white/95 backdrop-blur-sm {{ $isSupport ? 'opacity-60 pointer-events-none' : '' }}">
+                  class="ul-no-busy border-t px-3 py-2 flex flex-col gap-2 bg-white/95 backdrop-blur-sm {{ $isSupport ? 'opacity-60 pointer-events-none' : '' }}">
                 @csrf
                 <input type="hidden" id="active-conversation-id" name="conversation_id" value="">
 

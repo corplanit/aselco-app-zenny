@@ -14,17 +14,61 @@ class Conversation extends Model
 {
     use HasEncryptedRouteKey;
     protected $table = 'chat_conversation';
-    protected $fillable = ['type', 'name', 'photo', 'created_by', 'is_public', 'settings', 'meet', 'joined', 'meet_by', 'is_group'];
+    protected $fillable = [
+        'type',
+        'kind',
+        'customer_id',
+        'status',
+        'name',
+        'photo',
+        'created_by',
+        'is_public',
+        'settings',
+        'meet',
+        'joined',
+        'meet_by',
+        'is_group',
+    ];
 
     protected $casts = [
         'settings' => 'array',
         'is_public' => 'boolean',
+        'is_group' => 'boolean',
     ];
 
+    public const KIND_SUPPORT = 'support';
+
+    public const KIND_GENERAL = 'general';
+
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_CLOSED = 'closed';
 
     public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function customer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function scopeSupport($query)
+    {
+        return $query->where('kind', self::KIND_SUPPORT);
+    }
+
+    public function scopeOpen($query)
+    {
+        return $query->where('status', self::STATUS_OPEN);
+    }
+
+    public function scopeGeneral($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('kind')->orWhere('kind', self::KIND_GENERAL);
+        });
     }
 
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany|Conversation

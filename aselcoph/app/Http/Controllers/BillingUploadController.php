@@ -163,6 +163,9 @@ class BillingUploadController extends Controller
             'amount' => $request->amount,
             'billing_date' => $request->billing_date,
             'uploaded_by' => Auth::id(),
+            'status' => BillingUpload::STATUS_PENDING,
+            'paid_amount' => '0.00',
+            'balance_due' => $request->amount,
         ]);
 
         return redirect()->back()->with('success', 'Billing PDF uploaded successfully.');

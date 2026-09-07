@@ -1,0 +1,2268 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "ASELCO Member & Admin API",
+        "version": "1.0.0",
+        "description": "Versioned surface for Phases 2\u20136 (wallet, tickets/complaints, notifications)\nplus membership/customer-service helpers the mobile app already uses.\n\n**Base path:** `/api/v1`\n\n**Auth:** `Authorization: Bearer {sanctum_token}` from `POST /api/v1/auth/login`.\nCustomer routes also require a verified email. Admin wallet requires a role in\n`config('ast.load_wallet_roles')`. Admin tickets require `canManageTickets()`.\n\n**Success convention (do not wrap):** JSON is the resource, Laravel paginator,\nor `{ message, ...fields }`. Mutations may include `code` on domain errors.\n\n**Error convention:** `{ \"message\": string, \"code\": string, \"errors\"?: object }`\n",
+        "contact": {
+            "name": "ASELCO engineering"
+        }
+    },
+    "servers": [
+        {
+            "url": "/api/v1",
+            "description": "Current application (relative)"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Customer Service / membership login"
+        },
+        {
+            "name": "Customer Service",
+            "description": "Membership stepper, dashboard, CIS ledger proxy"
+        },
+        {
+            "name": "Wallet",
+            "description": "Phase 2\u20133 AST wallet (customer + admin)"
+        },
+        {
+            "name": "Tickets",
+            "description": "Phase 4 complaint & ticket management (customer + CSR/admin)"
+        },
+        {
+            "name": "Notifications",
+            "description": "Phase 6 in-app inbox, preferences, FCM device tokens"
+        },
+        {
+            "name": "Meta",
+            "description": "Version and OpenAPI document"
+        }
+    ],
+    "paths": {
+        "/meta": {
+            "get": {
+                "tags": [
+                    "Meta"
+                ],
+                "summary": "API version and conventions",
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "Metadata"
+                    }
+                }
+            }
+        },
+        "/openapi.json": {
+            "get": {
+                "tags": [
+                    "Meta"
+                ],
+                "summary": "OpenAPI 3 document",
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "OpenAPI JSON"
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register member",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string"
+                                    },
+                                    "contact_no": {
+                                        "type": "string"
+                                    },
+                                    "terms": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/MessageJson"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login and issue Sanctum token",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "default": "mobile"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token issued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Email not verified"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/auth/email/resend": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Resend verification email",
+                "security": [],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Revoke current token",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/auth/logout-all": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Revoke all tokens",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/auth/user": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Current user",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/membership/status": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "Membership stepper status",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "needs_membership_stepper": {
+                                            "type": "boolean"
+                                        },
+                                        "has_pending_link": {
+                                            "type": "boolean"
+                                        },
+                                        "has_validated_link": {
+                                            "type": "boolean"
+                                        },
+                                        "pending_count": {
+                                            "type": "integer"
+                                        },
+                                        "validated_count": {
+                                            "type": "integer"
+                                        },
+                                        "link_count": {
+                                            "type": "integer"
+                                        },
+                                        "max_links": {
+                                            "type": "integer"
+                                        },
+                                        "can_add_another_link": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/membership/privacy": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "Privacy copy",
+                "responses": {
+                    "200": {
+                        "description": "Title/summary/body"
+                    }
+                }
+            }
+        },
+        "/membership/account-links": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "List account link requests",
+                "responses": {
+                    "200": {
+                        "description": "AccountLinkResource collection"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "Submit account link request",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "account_number",
+                                    "owner_name"
+                                ],
+                                "properties": {
+                                    "account_number": {
+                                        "type": "string"
+                                    },
+                                    "owner_name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created link"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/membership/linked-accounts": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "Linked CIS accounts",
+                "responses": {
+                    "200": {
+                        "description": "LinkedAccountResource collection"
+                    }
+                }
+            }
+        },
+        "/dashboard/summary": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "Home dashboard (billing + AST wallet)",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard payload"
+                    }
+                }
+            }
+        },
+        "/ledger": {
+            "get": {
+                "tags": [
+                    "Customer Service"
+                ],
+                "summary": "CIS consumer ledger proxy",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "account_number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ledger payload"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/wallet": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "AST balances for linked accounts",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "account_number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AstWalletSummary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wallet/transactions": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Recent AST ledger entries",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "account_number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AstLedgerEntry"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wallet/pay": {
+            "post": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Pay with AST (account-level)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "account_number",
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "account_number": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "idempotency_key": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Payment recorded"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/customer/wallet/balance": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Customer AST balance (Phase 3)",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AstWalletSummary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/wallet/transactions": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Paginated customer AST transactions",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Laravel paginator of ledger entries"
+                    }
+                }
+            }
+        },
+        "/customer/wallet/pay-bill": {
+            "post": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Pay an electric bill with AST (partial allowed)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "billing_id",
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "billing_id": {
+                                        "type": "integer"
+                                    },
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "idempotency_key": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Payment recorded"
+                    },
+                    "422": {
+                        "description": "Domain error (AST_INSUFFICIENT_FUNDS, AST_BILL_ALREADY_PAID, \u2026)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/summary": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Admin wallet dashboard summary",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {
+                        "loadWalletRole": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Circulation, loads today/month, top customers, recent loads"
+                    }
+                }
+            }
+        },
+        "/admin/wallet/load": {
+            "post": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Load AST to a customer (maker-checker above threshold)",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {
+                        "loadWalletRole": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "customer_id",
+                                    "amount",
+                                    "reference_no",
+                                    "idempotency_key"
+                                ],
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "amount": {
+                                        "type": "number"
+                                    },
+                                    "reference_no": {
+                                        "type": "string"
+                                    },
+                                    "remarks": {
+                                        "type": "string"
+                                    },
+                                    "idempotency_key": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Credited"
+                    },
+                    "202": {
+                        "description": "Queued for approval"
+                    },
+                    "200": {
+                        "description": "Idempotent replay"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/admin/wallet/load-requests": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Maker-checker queue",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "approved",
+                                "rejected",
+                                "completed"
+                            ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginator of load requests"
+                    }
+                }
+            }
+        },
+        "/admin/wallet/load-requests/{id}/approve": {
+            "post": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Approve pending load (must be a different admin)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Credited"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/admin/wallet/load-requests/{id}/reject": {
+            "post": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Reject pending load",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "remarks": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rejected"
+                    }
+                }
+            }
+        },
+        "/admin/wallet/{customer_id}/transactions": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Customer wallet transaction history (admin)",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "customer_id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "from",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "load",
+                                "payment",
+                                "reversal",
+                                "adjustment"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginator"
+                    }
+                }
+            }
+        },
+        "/customer/tickets": {
+            "get": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "My tickets",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "$ref": "#/components/schemas/TicketStatus"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Laravel paginator"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Report a concern (mobile)",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "category_id",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "category_id": {
+                                        "type": "integer",
+                                        "description": "1\u20136 flowchart categories"
+                                    },
+                                    "subcategory": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "normal",
+                                            "high",
+                                            "urgent"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/tickets/{id}": {
+            "get": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Ticket detail (customer-safe timeline)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerTicket"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/customer/tickets/{id}/attachments": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Upload evidence",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "attachment"
+                                ],
+                                "properties": {
+                                    "attachment": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "{ data: TicketAttachment }"
+                    }
+                }
+            }
+        },
+        "/customer/tickets/{id}/feedback": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Was this resolved? (customer)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "method",
+                                    "customer_confirmed"
+                                ],
+                                "properties": {
+                                    "method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "call",
+                                            "message"
+                                        ]
+                                    },
+                                    "customer_confirmed": {
+                                        "type": "boolean"
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets": {
+            "get": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Staff ticket queue (department-scoped unless CSR/supervisor/admin)",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "$ref": "#/components/schemas/TicketStatus"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "category_id",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "assigned_department",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Laravel paginator"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "CSR intake create (status=new; Blade UI auto-endorses after this)",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "customer_id",
+                                    "category_id",
+                                    "channel",
+                                    "description"
+                                ],
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "category_id": {
+                                        "type": "integer"
+                                    },
+                                    "subcategory": {
+                                        "type": "string"
+                                    },
+                                    "channel": {
+                                        "type": "string",
+                                        "enum": [
+                                            "call",
+                                            "text",
+                                            "social/sms",
+                                            "app"
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "normal",
+                                            "high",
+                                            "urgent"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}": {
+            "get": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Staff ticket detail",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/endorse": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Endorse + auto-assign (Phase 5 routing)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "assigned_to": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "assigned_department": {
+                                        "type": "string"
+                                    },
+                                    "remarks": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/actions": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Log crew action (flowchart action box)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "action_taken",
+                                    "minutes_taken"
+                                ],
+                                "properties": {
+                                    "action_taken": {
+                                        "type": "string"
+                                    },
+                                    "minutes_taken": {
+                                        "type": "integer"
+                                    },
+                                    "requires_payment": {
+                                        "type": "boolean"
+                                    },
+                                    "requires_tsd_intervention": {
+                                        "type": "boolean"
+                                    },
+                                    "tsd_reason": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/feedback": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "CSR verification (flowchart diamond)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "method",
+                                    "customer_confirmed",
+                                    "needs_further_action"
+                                ],
+                                "properties": {
+                                    "method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "call",
+                                            "message"
+                                        ]
+                                    },
+                                    "customer_confirmed": {
+                                        "type": "boolean"
+                                    },
+                                    "needs_further_action": {
+                                        "type": "boolean"
+                                    },
+                                    "notes": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/escalate": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Escalate to another department",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "escalated_to",
+                                    "reason"
+                                ],
+                                "properties": {
+                                    "escalated_to": {
+                                        "type": "string"
+                                    },
+                                    "reason": {
+                                        "type": "string"
+                                    },
+                                    "assigned_to": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/status": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Supervisor status override",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "status",
+                                    "reason"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "$ref": "#/components/schemas/TicketStatus"
+                                    },
+                                    "reason": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/close": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Close (requires confirming resolution feedback)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "remarks": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminTicket"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ApiError"
+                    }
+                }
+            }
+        },
+        "/admin/tickets/{id}/attachments": {
+            "post": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Staff attachment upload",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "attachment"
+                                ],
+                                "properties": {
+                                    "attachment": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "{ data: TicketAttachment }"
+                    }
+                }
+            }
+        },
+        "/tickets/attachments/{attachment}": {
+            "get": {
+                "tags": [
+                    "Tickets"
+                ],
+                "summary": "Signed download (auth + signed URL)",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    },
+                    {
+                        "signedUrl": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "attachment",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File stream",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Customer notification inbox",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "per_page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 30
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationList"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}/read": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark one read",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark all read",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/admin/notifications": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Staff notification inbox",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationList"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/notifications/{id}/read": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark staff notification read",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/admin/notifications/read-all": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark all staff notifications read",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        },
+        "/notification-preferences": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Push/in-app category prefs",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Update prefs",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NotificationPrefs"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/devices": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Register FCM device token",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "token"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    },
+                                    "platform": {
+                                        "type": "string",
+                                        "example": "android"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Unregister FCM device token",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "token"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/MessageJson"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Sanctum"
+            },
+            "loadWalletRole": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Same Bearer token; user.role must be in ast.load_wallet_roles"
+            },
+            "signedUrl": {
+                "type": "apiKey",
+                "in": "query",
+                "name": "signature",
+                "description": "Laravel signed URL query params"
+            }
+        },
+        "security": [
+            {
+                "bearerAuth": []
+            }
+        ],
+        "parameters": {
+            "IdParam": {
+                "in": "path",
+                "name": "id",
+                "required": true,
+                "schema": {
+                    "type": "integer"
+                }
+            },
+            "IdempotencyKey": {
+                "in": "header",
+                "name": "Idempotency-Key",
+                "schema": {
+                    "type": "string",
+                    "maxLength": 128
+                }
+            }
+        },
+        "schemas": {
+            "ApiError": {
+                "type": "object",
+                "required": [
+                    "message",
+                    "code"
+                ],
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "VALIDATION_ERROR"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "email_verified_at": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contact_no": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "profile_photo_url": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AstWalletSummary": {
+                "type": "object",
+                "properties": {
+                    "account_number": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "balance": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "example": "AST"
+                    },
+                    "accounts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "account_number": {
+                                    "type": "string"
+                                },
+                                "balance": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "AstLedgerEntry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "account_number": {
+                        "type": "string"
+                    },
+                    "billing_upload_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "load",
+                            "pay",
+                            "adjust",
+                            "reversal"
+                        ]
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "balance_after": {
+                        "type": "number"
+                    },
+                    "reference": {
+                        "type": "string"
+                    },
+                    "cis_status": {
+                        "type": "string"
+                    },
+                    "cis_external_ref": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "TicketStatus": {
+                "type": "string",
+                "enum": [
+                    "new",
+                    "endorsed",
+                    "assigned",
+                    "in_progress",
+                    "awaiting_feedback",
+                    "escalated",
+                    "resolved",
+                    "closed",
+                    "reopened"
+                ]
+            },
+            "TicketCategory": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "department_code": {
+                        "type": "string"
+                    },
+                    "default_assignee_role": {
+                        "type": "string"
+                    },
+                    "sla_minutes": {
+                        "type": "integer"
+                    },
+                    "requires_payment_check": {
+                        "type": "boolean"
+                    },
+                    "requires_tsd_check": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "TicketAttachment": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "file_type": {
+                        "type": "string"
+                    },
+                    "file_size": {
+                        "type": "integer"
+                    },
+                    "uploaded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "download_url": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CustomerTicket": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "ticket_no": {
+                        "type": "string"
+                    },
+                    "customer_id": {
+                        "type": "integer"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/TicketCategory"
+                    },
+                    "subcategory": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "channel": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/TicketStatus"
+                    },
+                    "priority": {
+                        "type": "string"
+                    },
+                    "assigned_to": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "assigned_department": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "sla_due_at": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_by": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TicketAttachment"
+                        }
+                    },
+                    "actions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "actor_role": {
+                                    "type": "string"
+                                },
+                                "action_taken": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "description": "Always null for customers"
+                                },
+                                "minutes_taken": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "status_history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "from_status": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "to_status": {
+                                    "type": "string"
+                                },
+                                "remarks": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "created_at": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "AdminTicket": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/CustomerTicket"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "feedback": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            "escalations": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "NotificationPrefs": {
+                "type": "object",
+                "properties": {
+                    "billing": {
+                        "type": "boolean"
+                    },
+                    "service": {
+                        "type": "boolean"
+                    },
+                    "alert": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "AppNotification": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "billing",
+                            "service",
+                            "alert"
+                        ]
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "body": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "read_at": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "unread": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "NotificationList": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AppNotification"
+                        }
+                    },
+                    "unread_count": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "responses": {
+            "ApiError": {
+                "description": "Canonical error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ApiError"
+                        }
+                    }
+                }
+            },
+            "ValidationError": {
+                "description": "Validation failed",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ApiError"
+                        }
+                    }
+                }
+            },
+            "RateLimited": {
+                "description": "Rate limited",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ApiError"
+                        }
+                    }
+                }
+            },
+            "MessageJson": {
+                "description": "Message payload",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ]
+}

@@ -1,18 +1,49 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="ltr" data-nav-layout="vertical"
+    data-menu-styles="dark" data-header-styles="light" data-theme-mode="light">
 
 <head>
     <meta charset="utf-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function() {
+            try {
+                var dark = localStorage.getItem('xyntradarktheme') || localStorage.getItem('layout-theme') === 'dark';
+                var html = document.documentElement;
+                if (dark) {
+                    html.classList.add('dark');
+                    html.setAttribute('data-theme-mode', 'dark');
+                    html.setAttribute('data-header-styles', 'dark');
+                    html.setAttribute('data-menu-styles', 'dark');
+                    html.style.colorScheme = 'dark';
+                } else {
+                    html.classList.remove('dark');
+                    html.setAttribute('data-theme-mode', 'light');
+                    html.setAttribute('data-header-styles', 'light');
+                    html.setAttribute('data-menu-styles', 'dark');
+                    html.style.colorScheme = 'light';
+                }
+                html.style.setProperty('--primary', '14 124 58');
+                html.style.setProperty('--primary-rgb', '14, 124, 58');
+                localStorage.removeItem('primaryRGB');
+                localStorage.removeItem('primaryRGB1');
+            } catch (e) {}
+        })();
+    </script>
 
     <title>{{ config('app.name', 'Laravel') }}</title>
     <link rel="icon" href="/assets/logo_favicon.png" type="image/x-icon">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Ensure unified list styles load even if Vite CSS chunk is stale --}}
+<link rel="stylesheet" href="{{ asset('css/unified-list.css') }}?v={{ @filemtime(public_path('css/unified-list.css')) }}">
+<script>window.ulOptionUi = { map: @json(\App\Support\TicketUi::optionMeta()) };</script>
+<script src="{{ asset('js/unified-list.js') }}?v={{ @filemtime(public_path('js/unified-list.js')) }}"></script>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @include('components.nav-link')
 
@@ -26,8 +57,9 @@
         @include('components.nav-sidemenu')
 
         <div class="main-content app-content">
-            <div class="container-fluid">
-                @include('components.nav-breadcrumbs')
+            <div class="content-grid-backdrop" aria-hidden="true"></div>
+            @include('components.nav-breadcrumbs')
+            <div class="container-fluid content-slot">
                 @auth
                     @if (!Auth::user()->hasVerifiedEmail())
                         <div class="grid grid-cols-12 gap-6">
@@ -80,6 +112,8 @@
 
 
     @stack('modals')
+    @include('components.menu-search')
+    @stack('scripts')
     @include('components.nav-footer-link')
 
     @livewireScripts
@@ -89,7 +123,7 @@
     <script>
         (function() {
             const badgeId = 'count_unread_msg';
-            const endpoint = '/supp/chat/unread/total';
+            const endpoint = '/chats/support/unread-total';
 
             function clampDisplay(n) {
                 n = parseInt(n || 0, 10) || 0;
@@ -103,6 +137,7 @@
 
                 const anchor =
                     document.querySelector('[data-unread-badge-anchor="support-messages"]') ||
+                    document.querySelector('a[href="/chats"]') ||
                     document.querySelector('a[href="/supp/chat"]');
 
                 if (!anchor) return null;

@@ -1,11 +1,11 @@
-@include('pages.actions.table-mod')
+@include('pages.actions.table-mod', ['dtPlaceholder' => 'Search account number, consumer, email…', 'dtTableId' => 'clientTable'])
 
-<div class="table-responsive-n bg-white">
-    <table id="clientTable" class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+<div class="table-responsive-n bg-white ul-dt-wrap">
+    <table id="clientTable" class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
         <thead>
             <tr class="border-b border-defaultborder dark:border-defaultborder/10">
-                <th class="text-start" style="width: 5px">
-                    <input type="checkbox" class="form-check-input mx-3" id="selectAll">
+                <th class="text-start ul-row-num" style="width: 5px">
+                    <input type="checkbox" class="form-check-input mx-3 ul-no-row-click" id="selectAll" title="Select all">
                 </th>
                 <th scope="col" class="text-start" style="width: 100px">Account No.</th>
                 <th scope="col" class="text-start">Consumers</th>
@@ -134,7 +134,9 @@
                     $('#PopupInfo #d_email').val((data.email || '').toString().trim());
                     $('#PopupInfo #d_mobile').val((data.contact || '').toString().trim());
                     $('#PopupInfo #pw_user_id').val((data.user_id || '').toString().trim());
-
+                    if (typeof window.loadAstWalletTab === 'function') {
+                        window.loadAstWalletTab((data.account_no || '').toString().trim());
+                    }
 
                     // Reset sections
                     $('#PopupInfo #client_form').show();

@@ -11,9 +11,12 @@ import * as membershipApi from '../api/membership';
 import type {
   AccountLink,
   LinkedAccount,
+  MemberProfile,
   MembershipStatus,
   StoreAccountLinkPayload,
   StoreAccountLinkResponse,
+  StoreMemberProfilePayload,
+  StoreMemberProfileResponse,
 } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 
@@ -21,15 +24,19 @@ interface MembershipContextValue {
   status: MembershipStatus | null;
   links: AccountLink[];
   linkedAccounts: LinkedAccount[];
+  profile: MemberProfile | null;
   isLoading: boolean;
   linksLoading: boolean;
   needsMembershipStepper: boolean;
+  hasPersonalInfo: boolean;
   linkCount: number;
   canAddAnotherLink: boolean;
   refreshStatus: () => Promise<MembershipStatus | null>;
   refreshLinks: () => Promise<AccountLink[]>;
   refreshLinkedAccounts: () => Promise<LinkedAccount[]>;
+  refreshProfile: () => Promise<MemberProfile | null>;
   submitLink: (payload: StoreAccountLinkPayload) => Promise<StoreAccountLinkResponse>;
+  saveProfile: (payload: StoreMemberProfilePayload) => Promise<StoreMemberProfileResponse>;
   markStepperComplete: () => void;
 }
 
@@ -39,6 +46,7 @@ const emptyStatus = (): MembershipStatus => ({
   needs_membership_stepper: true,
   has_pending_link: false,
   has_validated_link: false,
+  has_personal_info: false,
   pending_count: 0,
   validated_count: 0,
   link_count: 0,
@@ -51,6 +59,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<MembershipStatus | null>(null);
   const [links, setLinks] = useState<AccountLink[]>([]);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [linksLoading, setLinksLoading] = useState(false);
 
@@ -94,6 +103,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       setStatus(null);
       setLinks([]);
       setLinkedAccounts([]);
+      setProfile(null);
       return null;
     }
 
@@ -122,11 +132,28 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
     }
   }, [token, status]);
 
+  const refreshProfile = useCallback(async () => {
+    if (!token) {
+      setProfile(null);
+      return null;
+    }
+
+    try {
+      const result = await membershipApi.getMemberProfile(token);
+      const next = result.data ?? null;
+      setProfile(next);
+      return next;
+    } catch {
+      return null;
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!isAuthenticated || !token) {
       setStatus(null);
       setLinks([]);
       setLinkedAccounts([]);
+      setProfile(null);
       setIsLoading(false);
       setLinksLoading(false);
       return;
@@ -138,21 +165,24 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const [nextStatus, nextLinks, nextLinked] = await Promise.all([
+        const [nextStatus, nextLinks, nextLinked, nextProfile] = await Promise.all([
           membershipApi.getMembershipStatus(token),
           membershipApi.listAccountLinks(token),
           membershipApi.listLinkedAccounts(token).catch(() => ({ data: [] as LinkedAccount[] })),
+          membershipApi.getMemberProfile(token).catch(() => ({ data: null as MemberProfile | null })),
         ]);
         if (!cancelled) {
           setStatus(nextStatus);
           setLinks(Array.isArray(nextLinks.data) ? nextLinks.data : []);
           setLinkedAccounts(Array.isArray(nextLinked.data) ? nextLinked.data : []);
+          setProfile(nextProfile.data ?? null);
         }
       } catch {
         if (!cancelled) {
           setStatus(emptyStatus());
           setLinks([]);
           setLinkedAccounts([]);
+          setProfile(null);
         }
       } finally {
         if (!cancelled) {
@@ -174,11 +204,13 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       }
 
       const result = await membershipApi.submitAccountLink(token, payload);
+      const hasPersonalInfo = result.has_personal_info ?? Boolean(profile);
 
       setStatus((prev) => ({
-        needs_membership_stepper: false,
+        needs_membership_stepper: result.needs_membership_stepper ?? !hasPersonalInfo,
         has_pending_link: true,
         has_validated_link: prev?.has_validated_link ?? false,
+        has_personal_info: hasPersonalInfo,
         pending_count: (prev?.pending_count ?? 0) + 1,
         validated_count: prev?.validated_count ?? 0,
         link_count: result.link_count ?? (prev?.link_count ?? 0) + 1,
@@ -193,6 +225,25 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       void refreshStatus();
       void membershipApi.listAccountLinks(token).then((res) => setLinks(res.data ?? []));
 
+      return result;
+    },
+    [token, refreshStatus, profile],
+  );
+
+  const saveProfile = useCallback(
+    async (payload: StoreMemberProfilePayload) => {
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const result = await membershipApi.saveMemberProfile(token, payload);
+      setProfile(result.data);
+      setStatus((prev) => ({
+        ...(prev ?? emptyStatus()),
+        needs_membership_stepper: result.needs_membership_stepper,
+        has_personal_info: result.has_personal_info,
+      }));
+      void refreshStatus();
       return result;
     },
     [token, refreshStatus],
@@ -212,36 +263,45 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
 
   const linkCount = status?.link_count ?? links.length;
   const canAddAnotherLink = status?.can_add_another_link ?? linkCount < 2;
+  const hasPersonalInfo = Boolean(status?.has_personal_info || profile);
 
   const value = useMemo<MembershipContextValue>(
     () => ({
       status,
       links,
       linkedAccounts,
+      profile,
       isLoading,
       linksLoading,
       needsMembershipStepper: Boolean(isAuthenticated && status?.needs_membership_stepper),
+      hasPersonalInfo,
       linkCount,
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
       refreshLinkedAccounts,
+      refreshProfile,
       submitLink,
+      saveProfile,
       markStepperComplete,
     }),
     [
       status,
       links,
       linkedAccounts,
+      profile,
       isLoading,
       linksLoading,
       isAuthenticated,
+      hasPersonalInfo,
       linkCount,
       canAddAnotherLink,
       refreshStatus,
       refreshLinks,
       refreshLinkedAccounts,
+      refreshProfile,
       submitLink,
+      saveProfile,
       markStepperComplete,
     ],
   );

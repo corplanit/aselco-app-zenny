@@ -42,7 +42,7 @@
 
 <div class="table-responsive-n">
     <table id="clientTable"
-        class="table table-sm min-w-full shadow-none !border border-defaultborder dark:border-defaultborder/10">
+        class="table ul-table min-w-full shadow-none !border border-defaultborder dark:border-defaultborder/10">
         <thead>
             <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                 <th class="text-start" style="width: 5px">

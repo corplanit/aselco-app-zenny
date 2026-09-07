@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TAccountRaw extends Model
 {
-    protected $table = 't_accounts_raw'; // Make sure this matches your DB table name
+    protected $table = 't_accounts_raw';
 
     protected $primaryKey = 'account_no';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -22,4 +25,9 @@ class TAccountRaw extends Model
         'address',
         'rate_class',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

@@ -1,78 +1,75 @@
-<div class="table-controls flex justify-between items-center mb-3">
-        <div id="customSearchWrapper"></div>
+{{-- Unified chrome for legacy DataTables pages --}}
+@php
+    $dtPlaceholder = $dtPlaceholder ?? 'Search…';
+    $dtTableId = $dtTableId ?? null;
+@endphp
 
-
-    <div class="flex items-center gap-3">
+<div class="ul-toolbar mb-3 ul-dt-chrome" data-dt-table="{{ $dtTableId }}">
+    <div class="ul-search">
+        <i class="bi bi-search ul-search-icon" aria-hidden="true"></i>
+        <input
+            type="search"
+            class="ti-form-input ul-search-input ul-dt-search"
+            placeholder="{{ $dtPlaceholder }}"
+            aria-label="{{ $dtPlaceholder }}"
+            autocomplete="off"
+        >
+    </div>
+    <div class="ul-toolbar-actions">
         <div id="customLengthWrapper"></div>
+        <div id="customSearchWrapper" class="hidden"></div>
     </div>
 </div>
 
 <script>
     $(document).ready(function() {
-
-        // ✅ Click Event for Row Navigation (Excluding Buttons & Checkboxes)
-        // $(document).on('click', '#clientTable tbody tr', function(e) {
-        //     let $row = $(this);
-        //     let link = $row.data('href');
-
-        //     // Prevent redirection when clicking buttons, checkboxes, or links
-        //     if (!$(e.target).closest('button, input[type="checkbox"], a').length) {
-        //         //window.open(link, '_blank'); // Open link in a new tab
-        //         window.location.href = link;
-        //     }
-        // });
-
-        // Select/Deselect All Checkboxes
-        $("#selectAll").on("click", function() {
-            $(".rowCheckbox").prop("checked", this.checked);
-        });
-        
         $("#selectAll").on("click", function() {
             $(".rowCheckbox").prop("checked", this.checked);
         });
 
         function boldNumbersInInfo() {
             let info = $('.dataTables_info').html();
-            info = info.replace(/(\d+)/g, '<strong>$1</strong>'); // Wrap numbers in <strong>
+            if (!info) return;
+            info = info.replace(/(\d+)/g, '<strong>$1</strong>');
             $('.dataTables_info').html(info);
         }
 
-        $('#clientTable').on('draw.dt', function() {
+        $(document).on('draw.dt', function() {
             boldNumbersInInfo();
         });
 
+        // Wire unified search input to the nearest / configured DataTable
+        $('.ul-dt-chrome').each(function() {
+            const $chrome = $(this);
+            const tableId = $chrome.data('dt-table');
+            const $input = $chrome.find('.ul-dt-search');
+            let debounce = null;
+
+            $input.on('input', function() {
+                const q = this.value;
+                clearTimeout(debounce);
+                debounce = setTimeout(function() {
+                    let api = null;
+                    if (tableId && $.fn.dataTable.isDataTable('#' + tableId)) {
+                        api = $('#' + tableId).DataTable();
+                    } else {
+                        const $table = $chrome.closest('.box, .custom-box, .ul-dt-wrap').find('table.dataTable, table[id]').first();
+                        if ($table.length && $.fn.dataTable.isDataTable($table)) {
+                            api = $table.DataTable();
+                        }
+                    }
+                    if (api) {
+                        api.search(q).draw();
+                    }
+                }, 300);
+            });
+
+            $input.on('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    $(this).trigger('input');
+                }
+            });
+        });
     });
 </script>
-<style>
-    .custom-tooltip {
-        position: relative;
-        display: inline-block;
-        cursor: pointer;
-    }
-
-    .custom-tooltip .tooltip-text {
-        visibility: hidden;
-        background-color: #222;
-        /* Tooltip background */
-        color: #fff;
-        /* Tooltip text color */
-        font-family: 'Arial', sans-serif;
-        font-size: 12px;
-        text-align: center;
-        border-radius: 4px;
-        padding: 4px 8px;
-        position: absolute;
-        z-index: 100;
-        bottom: 120%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
-        white-space: nowrap;
-    }
-
-    .custom-tooltip:hover .tooltip-text {
-        visibility: visible;
-        opacity: 1;
-    }
-</style>

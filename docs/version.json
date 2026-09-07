@@ -1,0 +1,7 @@
+{
+  "version": "1.0.3",
+  "updatedAt": "2026-09-07 03:49:11",
+  "revision": 3,
+  "notes": "Bump automatically when running: node docs/build-docs-data.js",
+  "fileCount": 33
+}

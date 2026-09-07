@@ -10,12 +10,12 @@
         <div class="xl:col-span-12 col-span-12">
             <div class="box custom-box">
                 <div class="box-header">
-                    <div class="box-body">
-                        @include('pages.actions.table-mod')
+                    <div class="box-body ul-dt-wrap">
+                        @include('pages.actions.table-mod', ['dtPlaceholder' => 'Search articles…', 'dtTableId' => 'blogTable'])
 
                         <div class="table-responsive-n">
                             <table id="blogTable"
-                                class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+                                class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
                                 <thead>
                                     <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                                         <th class="text-start" style="width: 5px">

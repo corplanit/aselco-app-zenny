@@ -30,6 +30,6 @@ class GoogleController extends Controller
 
         Auth::login($user);
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended($user->loginHomePath());
     }
 }

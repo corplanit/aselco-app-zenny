@@ -1,9 +1,9 @@
-@include('pages.actions.table-mod')
+@include('pages.actions.table-mod', ['dtPlaceholder' => 'Search my complaints…', 'dtTableId' => 'complaintTable'])
 
 <div class="box-body p-0">
     <div class="dt-scroller">
         <table id="complaintTable"
-            class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+            class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
             <thead>
                 <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                     <th class="px-6 py-2 border" style="width: 10px;"><span class="mx-2">#</span></th>

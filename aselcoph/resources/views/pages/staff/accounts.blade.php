@@ -28,13 +28,13 @@
             </div>
 
 
-            <div class="custom-box">
+            <div class="custom-box ul-dt-wrap">
 
-                @include('pages.actions.table-mod')
+                @include('pages.actions.table-mod', ['dtPlaceholder' => 'Search accounts…', 'dtTableId' => 'accountsTable'])
 
                 <div class="table-responsive-n">
                     <table id="accountsTable"
-                        class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+                        class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
                         <thead>
                             <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                                 <th style="width: 40px" class="text-start">

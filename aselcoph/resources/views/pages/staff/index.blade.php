@@ -15,13 +15,13 @@
         <div class="box-body">
             <i class="bi bi-info-circle px-1"></i> You can manage the billing here.
             <hr class="mb-3 mt-3">
-            <div class="custom-box">
+            <div class="custom-box ul-dt-wrap">
 
-                @include('pages.actions.table-mod')
+                @include('pages.actions.table-mod', ['dtPlaceholder' => 'Search billing uploads…', 'dtTableId' => 'billingTable'])
 
                 <div class="table-responsive-n">
                     <table id="billingTable"
-                        class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+                        class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
                         <thead class="">
                             <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                                 <th class="px-6 py-2 border" style="width: 10px;"><span class="mx-2">#</span>

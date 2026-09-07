@@ -5,6 +5,26 @@ import { registerDeviceToken } from '../api/notifications';
 let initialized = false;
 let currentAuthToken: string | null = null;
 
+function resolveDeepLink(data: Record<string, unknown> | undefined): string | null {
+  if (!data) return null;
+
+  const deepLink = typeof data.deep_link === 'string' ? data.deep_link : undefined;
+  if (deepLink) return deepLink;
+
+  const ticketId = data.ticket_id != null ? String(data.ticket_id) : undefined;
+  if (ticketId) return `/tickets/${ticketId}`;
+
+  const conversationId = data.conversation_id != null ? String(data.conversation_id) : undefined;
+  if (conversationId || data.category === 'chat') return '/support/chat';
+
+  const announcementId = data.announcement_id != null ? String(data.announcement_id) : undefined;
+  if (announcementId || data.category === 'announcement') return '/notifications';
+
+  if (data.category === 'billing' || data.category === 'wallet') return '/tabs/ledger';
+
+  return null;
+}
+
 export const initializePushNotifications = async (authToken: string | null): Promise<void> => {
   currentAuthToken = authToken;
 
@@ -35,6 +55,16 @@ export const initializePushNotifications = async (authToken: string | null): Pro
 
     await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       console.info('Push notification opened:', action.notification);
+      const notificationData =
+        (action.notification as { data?: Record<string, unknown> } | undefined)?.data ?? undefined;
+      const actionData = (action as { data?: Record<string, unknown> } | undefined)?.data ?? undefined;
+      const data = notificationData ?? actionData;
+      const target = resolveDeepLink(data);
+
+      if (target) {
+        // Using full location fallback because this module is outside React router context.
+        window.location.href = target;
+      }
     });
   }
 

@@ -1,38 +1,33 @@
-<x-form-section submit="updatePassword">
-    <x-slot name="title">
-        🔐 {{ __('Update Password') }}
-    </x-slot>
-    <x-slot name="description">
-        {{ __('Ensure your account is using a long, random password to stay secure.') }}
-    </x-slot>
-
-    <x-slot name="form">
-        <div class="col-span-12 sm:col-span-12">
-            <x-label for="current_password" value="{{ __('Current Password') }}" />
-            <x-input id="current_password" type="password" class="mt-1 block w-full" wire:model="state.current_password" autocomplete="current-password" />
-            <x-input-error for="current_password" class="mt-2" />
+<form wire:submit="updatePassword">
+    <div class="box ul-card">
+        <div class="box-header ul-card-header">
+            <div class="box-title ul-card-title">
+                Update password
+                <span class="ul-card-count">Use a long, unique password</span>
+            </div>
         </div>
-
-        <div class="col-span-12 sm:col-span-12">
-            <x-label for="password" value="{{ __('New Password') }}" />
-            <x-input id="password" type="password" class="mt-1 block w-full" wire:model="state.password" autocomplete="new-password" />
-            <x-input-error for="password" class="mt-2" />
+        <div class="box-body pf-form">
+            <div class="ul-field">
+                <label class="ti-form-label" for="current_password">Current password</label>
+                <input id="current_password" type="password" class="ti-form-input" wire:model="state.current_password" autocomplete="current-password">
+                <x-input-error for="current_password" class="mt-2" />
+            </div>
+            <div class="ul-field">
+                <label class="ti-form-label" for="password">New password</label>
+                <input id="password" type="password" class="ti-form-input" wire:model="state.password" autocomplete="new-password">
+                <x-input-error for="password" class="mt-2" />
+            </div>
+            <div class="ul-field">
+                <label class="ti-form-label" for="password_confirmation">Confirm password</label>
+                <input id="password_confirmation" type="password" class="ti-form-input" wire:model="state.password_confirmation" autocomplete="new-password">
+                <x-input-error for="password_confirmation" class="mt-2" />
+            </div>
         </div>
-
-        <div class="col-span-12 sm:col-span-12">
-            <x-label for="password_confirmation" value="{{ __('Confirm Password') }}" />
-            <x-input id="password_confirmation" type="password" class="mt-1 block w-full" wire:model="state.password_confirmation" autocomplete="new-password" />
-            <x-input-error for="password_confirmation" class="mt-2" />
+        <div class="ul-card-footer pf-actions">
+            <x-action-message class="pf-saved" on="saved">Saved.</x-action-message>
+            <button type="submit" class="ti-btn ti-btn-sm ul-btn ul-btn-view">
+                <i class="bi bi-check2"></i>Save
+            </button>
         </div>
-    </x-slot>
-
-    <x-slot name="actions">
-        <x-action-message class="me-3" on="saved">
-            {{ __('Saved.') }}
-        </x-action-message>
-
-        <x-button>
-            {{ __('Save') }}
-        </x-button>
-    </x-slot>
-</x-form-section>
+    </div>
+</form>

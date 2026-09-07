@@ -9,9 +9,9 @@ class BroadcastServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // This registers /broadcasting/auth
+        // Session (portal Echo) + Sanctum bearer (mobile)
         Broadcast::routes([
-            'middleware' => ['auth:web'], // or ['auth:sanctum'] or whatever you use
+            'middleware' => ['web', 'auth:sanctum'],
         ]);
 
         require base_path('routes/channels.php');

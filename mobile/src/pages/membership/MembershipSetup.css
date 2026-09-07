@@ -92,3 +92,13 @@
 .membership-signout ion-icon {
   font-size: 18px;
 }
+
+.membership-geo-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  font-size: 13px;
+  color: var(--aselco-ink-500);
+}

@@ -1,0 +1,115 @@
+.support-page {
+  padding: 10px 12px 20px;
+}
+
+.support-live-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(14, 124, 58, 0.22);
+  border-radius: 12px;
+  background: rgba(14, 124, 58, 0.08);
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.support-live-cta__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #0e7c3a;
+  color: #fff;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.support-live-cta__copy {
+  display: grid;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.support-live-cta__copy strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.support-live-cta__copy span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.support-section-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.support-list {
+  margin: 0 0 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.support-list ion-item {
+  --min-height: 48px;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  font-size: 13px;
+}
+
+.support-list h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.support-list p {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.support-search {
+  padding: 0;
+  margin: 0 0 6px;
+  --border-radius: 10px;
+  min-height: 40px;
+}
+
+.support-faq {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+}
+
+.support-faq ion-item {
+  --min-height: 42px;
+  font-size: 13px;
+}
+
+.support-faq__answer {
+  padding: 8px 12px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.support-actions {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}

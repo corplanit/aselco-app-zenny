@@ -33,7 +33,7 @@
 
                         <div class="table-responsive-n bg-white">
                             <table id="pagesTable"
-                                class="table table-sm min-w-full !border border-defaultborder dark:border-defaultborder/10">
+                                class="table ul-table min-w-full !border border-defaultborder dark:border-defaultborder/10">
                                 <thead>
                                     <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                                         <th class="text-start" style="width: 5px">
@@ -153,7 +153,7 @@
                                                 </span>
 
                                                 <span class="custom-tooltip">
-                                                    <form action="{{ url('/menu-items') }}/${id}" method="POST" onsubmit="return confirm('Delete this page?')">
+                                                    <form action="{{ url('/menu-items') }}/${id}" method="POST" data-ul-confirm="Delete this page." data-ul-confirm-verb="Delete" data-ul-confirm-tone="danger" data-ul-confirm-icon="bi-trash">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="ti-btn ti-btn-sm ti-btn-soft-danger bg-danger/10">
                                                         <i class="bi bi-trash"></i>

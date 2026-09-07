@@ -1,9 +1,9 @@
 {{-- resources/views/file-manager/partials/file-list.blade.php --}}
 
-@include('pages.actions.table-mod')
+@include('pages.actions.table-mod', ['dtPlaceholder' => 'Search files…', 'dtTableId' => 'fileListTable'])
 
-<div class="table-responsive">
-    <table id="fileListTable" class="table table-sm w-full border border-defaultborder dark:border-defaultborder/10">
+<div class="table-responsive ul-dt-wrap">
+    <table id="fileListTable" class="table ul-table w-full border border-defaultborder dark:border-defaultborder/10">
         <thead>
             <tr class="border-b border-defaultborder dark:border-defaultborder/10">
                 <th class="text-start w-5">

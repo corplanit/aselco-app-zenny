@@ -73,8 +73,8 @@
                 });
 
                 setTimeout(() => {
-                    $('#clientTable').DataTable().ajax.reload();
-                }, 3000);
+                    window.location.reload();
+                }, 1200);
             });
         });
     </script>
@@ -116,8 +116,8 @@
 
                 // Reload table after 3 seconds
                 setTimeout(() => {
-                    $('#clientTable').DataTable().ajax.reload();
-                }, 3000);
+                    window.location.reload();
+                }, 1200);
 
             }).fail(function(xhr) {
                 Swal.fire({
@@ -155,8 +155,8 @@
                 });
 
                 setTimeout(() => {
-                    $('#clientTable').DataTable().ajax.reload();
-                }, 3000);
+                    window.location.reload();
+                }, 1200);
 
             }).fail(function(xhr) {
                 Swal.fire({

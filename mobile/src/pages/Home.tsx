@@ -106,7 +106,22 @@ const Home: React.FC = () => {
             Good day, <strong style={{ color: 'var(--aselco-ink-900)' }}>{displayName}</strong>
           </p>
 
-          <BalanceCard wallet={tokenWallet} walletIsDemo accountBalances={accountBalances} />
+          <BalanceCard
+            wallet={
+              summary?.wallet
+                ? {
+                    balance:
+                      typeof summary.wallet.total_balance === 'number'
+                        ? summary.wallet.total_balance
+                        : summary.wallet.balance,
+                    unit: summary.wallet.unit || 'AST',
+                  }
+                : tokenWallet
+            }
+            walletIsDemo={!summary?.wallet}
+            accountBalances={accountBalances}
+            onWalletClick={() => router.push('/wallet')}
+          />
 
           <SectionHeader title="Quick Actions" />
           <QuickActions actions={quickActions} />

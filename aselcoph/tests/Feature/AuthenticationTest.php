@@ -27,7 +27,68 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect('/u/dashboard');
+    }
+
+    public function test_support_is_redirected_to_department_queue_after_login(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'support',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/workspace/department-queue');
+    }
+
+    public function test_customer_service_is_redirected_to_department_queue_after_login(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'Customer Service',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/workspace/department-queue');
+    }
+
+    public function test_customer_stays_on_dashboard_after_login(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'User',
+            'user_type' => 'customer',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/u/dashboard');
+    }
+
+    public function test_administrator_stays_on_dashboard_after_login(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'Administrator',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/u/dashboard');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

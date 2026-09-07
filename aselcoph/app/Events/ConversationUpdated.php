@@ -44,8 +44,17 @@ class ConversationUpdated implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         $isGroup = $this->conversation->type === 'group';
+        $isSupport = $this->conversation->kind === Conversation::KIND_SUPPORT;
 
-        if ($isGroup) {
+        if ($isSupport) {
+            $customer = $this->conversation->relationLoaded('customer')
+                ? $this->conversation->customer
+                : $this->conversation->customer()->first();
+            $isAgentViewer = (int) $this->conversation->customer_id !== (int) $this->forUserId;
+            $displayTitle = $isAgentViewer
+                ? ($customer?->name ?? 'Customer')
+                : 'Support Team';
+        } elseif ($isGroup) {
             $displayTitle = $this->conversation->name ?? 'Group Chat';
         } else {
             $other = $this->conversation->participants

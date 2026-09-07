@@ -6,7 +6,12 @@ use App\Http\Controllers\BillingApiController;
 use App\Http\Controllers\BillingUploadController;
 use App\Http\Controllers\Chats\ConversationController;
 use App\Http\Controllers\Chats\MessagesController;
+use App\Http\Controllers\Chats\SupportChatController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\AstWalletAdminController;
+use App\Http\Controllers\AstAdminWebController;
+use App\Http\Controllers\TicketAdminWebController;
+use App\Http\Controllers\KnowledgeAdminWebController;
 use App\Http\Controllers\CustomerComplaintController;
 use App\Http\Controllers\FileManagerController;
 use App\Models\TAccountRaw;
@@ -20,6 +25,9 @@ use App\Http\Controllers\ChunkUploadController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\postController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Access\AccessUserWebController;
+use App\Http\Controllers\Access\AccessOrgWebController;
+use App\Http\Controllers\Access\SupportWorkspaceWebController;
 use App\Models\postModel;
 use App\Models\User;
 
@@ -35,6 +43,10 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+Route::get('/api/docs', function () {
+    return view('api.docs');
+});
+
 Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 
@@ -46,42 +58,18 @@ Route::get('/storage/{link}', function ($link) {
     return view('home.components.storage', compact('link'));
 });
 
-use App\Http\Controllers\SuppChatController;
-use App\Http\Controllers\SuppMessageController;
-
-Route::middleware(['auth'])->get('/supp/chat/unread/total', [SuppChatController::class, 'unreadTotal']);
+Route::middleware(['auth'])->get('/supp/chat/unread/total', [\App\Http\Controllers\Chats\SupportChatController::class, 'unreadTotal']);
+Route::middleware(['auth'])->get('/chats/support/unread-total', [\App\Http\Controllers\Chats\SupportChatController::class, 'unreadTotal'])
+    ->name('chats.support.unread');
 
 Route::middleware(['auth'])->prefix('supp/chat')->group(function () {
-
-    Route::get('/', [SuppChatController::class, 'index'])->name('supp.chat');
-
-    // ✅ POLLING ENDPOINTS
-    Route::get('/poll/updates', [SuppChatController::class, 'pollUpdates'])->name('supp.chat.poll');
-    Route::get('/{conversationId}/messages/new', [SuppMessageController::class, 'newMessages'])->name('supp.chat.messages.new');
-
-    // ✅ NORMAL ENDPOINTS
-    Route::post('/ensure-mine', [SuppChatController::class, 'ensureMine'])->name('supp.chat.ensure');
-    Route::get('/{conversationId}/messages', [SuppMessageController::class, 'messages'])->name('supp.chat.messages');
-    Route::post('/{conversationId}/messages', [SuppMessageController::class, 'send'])->name('supp.chat.send');
-    Route::post('/{conversationId}/read', [SuppMessageController::class, 'read'])->name('supp.chat.read');
+    Route::any('{any?}', function () {
+        return redirect()->route('chats.support');
+    })->where('any', '.*');
 });
 
 
-// Route::middleware(['auth'])->group(function () {
-//     // UI
-//     Route::get('/supp/chat', [SuppChatController::class, 'index'])->name('supp.chat');
-
-//     // customer: ensure their conversation exists
-//     Route::post('/supp/chat/ensure-mine', [SuppChatController::class, 'ensureMine'])->name('supp.chat.ensure');
-
-//     // messages
-//     Route::get('/supp/chat/{conversation}/messages', [SuppMessageController::class, 'messages']);
-//     Route::post('/supp/chat/{conversation}/messages', [SuppMessageController::class, 'send']);
-//     Route::post('/supp/chat/{conversation}/read', [SuppMessageController::class, 'read']);
-
-//     Route::get('/supp/unread-total', [SuppMessageController::class, 'unreadTotal']);
-// });
-
+// Legacy Supp* routes redirected above.
 // Route::get('/login', function () {
 //     if (Auth::check()) {
 //         return redirect('/dashboard');
@@ -134,17 +122,27 @@ Route::post('/email/verification-notification', function (Request $request) {
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')])->group(function () {
     Route::get('/dashboard', function () {
-        if (Auth::user()->role == 'staff') {
-            return redirect('/t/dashboard');
-        } else {
-            return redirect('/u/dashboard');
-        }
+        return redirect(Auth::user()->loginHomePath());
     });
 
     Route::middleware('auth')->group(function () {
-        Route::get('/chats', [ConversationController::class, 'index'])->name('chats.show');
+        Route::get('/chats', [SupportChatController::class, 'index'])->name('chats.support');
+        Route::get('/chats/support', [SupportChatController::class, 'index']);
+        Route::post('/chats/support/ensure', [SupportChatController::class, 'ensure'])->name('chats.support.ensure');
+        Route::get('/chats/support/inbox', [SupportChatController::class, 'inbox'])->name('chats.support.inbox');
+        Route::get('/chats/support/{conversation}/messages', [SupportChatController::class, 'messages'])
+            ->whereNumber('conversation')
+            ->name('chats.support.messages');
+        Route::post('/chats/support/{conversation}/messages', [SupportChatController::class, 'send'])
+            ->whereNumber('conversation')
+            ->name('chats.support.send');
+        Route::post('/chats/support/{conversation}/read', [SupportChatController::class, 'read'])
+            ->whereNumber('conversation')
+            ->name('chats.support.read');
+
         Route::get('/chats/monitor', [ConversationController::class, 'monitor'])->name('chats.monitor');
         Route::get('/chats/monitor/{id}', [ConversationController::class, 'show'])->name('conversations.show');
+        Route::get('/chats/legacy', [ConversationController::class, 'index'])->name('chats.show');
     });
     Route::middleware(['auth'])->group(function () {
         // Create new DM / Group (used by the "New Chat" modal)
@@ -201,7 +199,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
     });
 
     Route::prefix('/consumer')->group(function () {
-        Route::get('/list', [CustomerController::class, 'index']);
+        Route::get('/list', [CustomerController::class, 'index'])->name('consumer.list');
         Route::post('/store', [AccountLinkController::class, 'store'])->name('link.store');
         Route::post('/update', [AccountLinkController::class, 'update'])->name('link.update');
 
@@ -214,7 +212,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
         $type = $request->type;
 
         if ($type == 'consumer') {
-            TAccountRaw::where('id', $id)->update(['isDeleted' => 1]);
+            TAccountRaw::query()
+                ->where(function ($query) use ($id) {
+                    $query->where('account_no', $id);
+                    if (is_numeric($id) && \Illuminate\Support\Facades\Schema::hasColumn('t_accounts_raw', 'id')) {
+                        $query->orWhere('id', $id);
+                    }
+                })
+                ->update(['isDeleted' => 1]);
         } elseif ($type == 'post') {
             postModel::where('post_id', $id)->update(['isDeleted' => 1]);
         }
@@ -246,8 +251,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
 
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/create', [AnnouncementController::class, 'create'])->name('announcements.create');
+    Route::get('/announcements/search-users', [AnnouncementController::class, 'searchUsers'])->name('announcements.search-users');
     Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
     Route::post('/announcements/preview-audience', [AnnouncementController::class, 'previewAudience'])->name('announcements.preview');
+    Route::get('/announcements/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('announcements.edit');
+    Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
     Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->name('announcements.show');
     Route::post('/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])->name('announcements.publish');
 
@@ -264,11 +272,90 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
     // });
 
     Route::get('/support', function () {
-        return view('chats.support');
+        return redirect()->route('chats.support');
     });
 
     Route::get('/complaint', function () {
         return view('pages.staff.complaint');
+    });
+
+    Route::middleware('can.manage-tickets')->prefix('/tickets')->name('tickets.')->group(function () {
+        Route::get('/', [TicketAdminWebController::class, 'queue'])->name('queue');
+        Route::get('/intake', [TicketAdminWebController::class, 'intake'])->name('intake');
+        Route::post('/', [TicketAdminWebController::class, 'store'])->name('store');
+        Route::get('/customer-search', [TicketAdminWebController::class, 'customerSearch'])->name('customer-search');
+        Route::post('/customers', [TicketAdminWebController::class, 'createCustomer'])->name('customers.store');
+        Route::get('/escalations', [TicketAdminWebController::class, 'escalations'])->name('escalations');
+        Route::get('/reports', [TicketAdminWebController::class, 'reports'])->name('reports');
+        Route::get('/ai', [TicketAdminWebController::class, 'aiDashboard'])->name('ai');
+        Route::get('/notifications', [TicketAdminWebController::class, 'notifications'])->name('notifications');
+        Route::post('/notifications/read-all', [TicketAdminWebController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
+        Route::post('/notifications/{id}/read', [TicketAdminWebController::class, 'markNotificationRead'])->name('notifications.read')->whereNumber('id');
+        Route::get('/attachments/{attachment}', [TicketAdminWebController::class, 'downloadAttachment'])->name('attachments.download')->whereNumber('attachment');
+        Route::get('/{id}', [TicketAdminWebController::class, 'show'])->name('show')->whereNumber('id');
+        Route::post('/{id}/ai/analyze', [TicketAdminWebController::class, 'aiAnalyze'])->name('ai.analyze')->whereNumber('id');
+        Route::post('/{id}/ai/apply-priority', [TicketAdminWebController::class, 'aiApplyPriority'])->name('ai.apply-priority')->whereNumber('id');
+        Route::post('/{id}/ai/suggest-response', [TicketAdminWebController::class, 'aiSuggestResponse'])->name('ai.suggest-response')->whereNumber('id');
+        Route::post('/{id}/ai/drafts/{draftId}/review', [TicketAdminWebController::class, 'aiReviewDraft'])->name('ai.review-draft')->whereNumber('id')->whereNumber('draftId');
+        Route::post('/{id}/start', [TicketAdminWebController::class, 'startProgress'])->name('start')->whereNumber('id');
+        Route::post('/{id}/actions', [TicketAdminWebController::class, 'action'])->name('action')->whereNumber('id');
+        Route::post('/{id}/feedback', [TicketAdminWebController::class, 'feedback'])->name('feedback')->whereNumber('id');
+        Route::post('/{id}/escalate', [TicketAdminWebController::class, 'escalate'])->name('escalate')->whereNumber('id');
+        Route::post('/{id}/close', [TicketAdminWebController::class, 'close'])->name('close')->whereNumber('id');
+        Route::post('/{id}/attachments', [TicketAdminWebController::class, 'attach'])->name('attach')->whereNumber('id');
+        Route::post('/{id}/reassign', [TicketAdminWebController::class, 'reassign'])->name('reassign')->whereNumber('id');
+    });
+
+    Route::middleware('can.manage-tickets')->prefix('/knowledge')->name('knowledge.')->group(function () {
+        Route::get('/', [KnowledgeAdminWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('/documents', [KnowledgeAdminWebController::class, 'index'])->name('index');
+        Route::get('/documents/create', [KnowledgeAdminWebController::class, 'create'])->name('create');
+        Route::post('/documents', [KnowledgeAdminWebController::class, 'store'])->name('store');
+        Route::get('/documents/{id}', [KnowledgeAdminWebController::class, 'show'])->name('show')->whereNumber('id');
+        Route::get('/documents/{id}/edit', [KnowledgeAdminWebController::class, 'edit'])->name('edit')->whereNumber('id');
+        Route::put('/documents/{id}', [KnowledgeAdminWebController::class, 'update'])->name('update')->whereNumber('id');
+        Route::post('/documents/{id}/toggle', [KnowledgeAdminWebController::class, 'toggle'])->name('toggle')->whereNumber('id');
+        Route::post('/documents/{id}/reindex', [KnowledgeAdminWebController::class, 'reindex'])->name('reindex')->whereNumber('id');
+        Route::get('/categories', [KnowledgeAdminWebController::class, 'categories'])->name('categories');
+        Route::post('/categories', [KnowledgeAdminWebController::class, 'storeCategory'])->name('categories.store');
+        Route::match(['get', 'post'], '/test', [KnowledgeAdminWebController::class, 'test'])->name('test');
+        Route::get('/chat', [KnowledgeAdminWebController::class, 'chat'])->name('chat');
+        Route::post('/chat', [KnowledgeAdminWebController::class, 'chatSend'])->name('chat.send');
+        Route::get('/chat/{id}', [KnowledgeAdminWebController::class, 'chatShow'])->name('chat.show')->whereNumber('id');
+        Route::delete('/chat/{id}', [KnowledgeAdminWebController::class, 'chatDestroy'])->name('chat.destroy')->whereNumber('id');
+    });
+
+    Route::get('/ast/wallet', [AstWalletAdminController::class, 'show'])->name('ast.wallet.show');
+    Route::post('/ast/load', [AstWalletAdminController::class, 'load'])->name('ast.load');
+    Route::get('/ast/cis-queue', [AstWalletAdminController::class, 'cisQueue'])->name('ast.cis.queue');
+    Route::post('/ast/payments/{id}/post-cis', [AstWalletAdminController::class, 'postCis'])
+        ->whereNumber('id')
+        ->name('ast.cis.post');
+
+    // ── AST Admin Blade UI ────────────────────────────────────────────────
+    Route::prefix('/ast/admin')->name('ast.admin.')->group(function () {
+        Route::get('/dashboard',   [AstAdminWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('/daily-chart', [AstAdminWebController::class, 'dailyChart'])->name('daily-chart');
+
+        // Load AST (write access — canLoadWallet required, enforced in controller)
+        Route::get('/load',  [AstAdminWebController::class, 'loadForm'])->name('load');
+        Route::post('/load', [AstAdminWebController::class, 'loadSubmit'])->name('load.submit');
+        Route::post('/adjust', [AstAdminWebController::class, 'adjustSubmit'])->name('adjust.submit');
+
+        // Support request load (any staff can submit; wallet.load approves)
+        Route::get('/request',  [AstAdminWebController::class, 'requestForm'])->name('request');
+        Route::post('/request', [AstAdminWebController::class, 'requestSubmit'])->name('request.submit');
+
+        // Customer search (AJAX, read-only)
+        Route::get('/customer-search', [AstAdminWebController::class, 'customerSearch'])->name('customer-search');
+
+        // Load requests / maker-checker queue
+        Route::get('/load-requests',                     [AstAdminWebController::class, 'loadRequests'])->name('load-requests');
+        Route::post('/load-requests/{id}/approve',       [AstAdminWebController::class, 'approveRequest'])->name('load-requests.approve')->whereNumber('id');
+        Route::post('/load-requests/{id}/reject',        [AstAdminWebController::class, 'rejectRequest'])->name('load-requests.reject')->whereNumber('id');
+
+        // Customer wallet detail (read-only for all staff, canLoad gates the "Load AST" button in view)
+        Route::get('/customer/{userId}', [AstAdminWebController::class, 'customerWallet'])->name('customer-wallet')->whereNumber('userId');
     });
 
     Route::get('/api/user-name/{id}', function ($id) {
@@ -295,10 +382,64 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session', 'verified')]
 
     Route::post('/fetch-billing', [BillingApiController::class, 'getBillingData']);
 
-    Route::get('users', [UserController::class, 'index']);
-    Route::post('/users/store', [UserController::class, 'store'])->name('users.save');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::get('users', fn () => redirect()->route('access.users.index'));
+    Route::post('/users/store', [AccessUserWebController::class, 'store'])->name('users.save');
+    Route::put('/users/{user}', [AccessUserWebController::class, 'update'])->name('users.update');
     Route::post('/api/users', [UserController::class, 'datatable'])->name('api.users');
+
+    Route::prefix('/access')->name('access.')->group(function () {
+        Route::get('/users', [AccessUserWebController::class, 'index'])->name('users.index');
+        Route::get('/customers', [AccessUserWebController::class, 'customers'])->name('customers.index');
+        Route::get('/customers/{user}', [AccessUserWebController::class, 'showCustomer'])->name('customers.show')->whereNumber('user');
+        Route::get('/customers/{user}/membership-application', [AccessUserWebController::class, 'membershipApplication'])->name('customers.membership-application')->whereNumber('user');
+        Route::get('/support', [AccessUserWebController::class, 'support'])->name('support.index');
+        Route::get('/support/{user}', [AccessUserWebController::class, 'showSupport'])->name('support.show')->whereNumber('user');
+        Route::post('/users', [AccessUserWebController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [AccessUserWebController::class, 'update'])->name('users.update-full')->whereNumber('user');
+        Route::post('/users/{user}/photo', [AccessUserWebController::class, 'photo'])->name('users.photo')->whereNumber('user');
+        Route::delete('/users/{user}/photo', [AccessUserWebController::class, 'destroyPhoto'])->name('users.photo.destroy')->whereNumber('user');
+        Route::post('/users/{user}/status', [AccessUserWebController::class, 'status'])->name('users.status')->whereNumber('user');
+        Route::post('/users/{user}/reset', [AccessUserWebController::class, 'reset'])->name('users.reset')->whereNumber('user');
+        Route::post('/users/{user}/password', [AccessUserWebController::class, 'password'])->name('users.password')->whereNumber('user');
+        Route::get('/accounts/search', [AccessUserWebController::class, 'searchAccounts'])->name('users.accounts.search');
+        Route::post('/users/{user}/account-links', [AccessUserWebController::class, 'storeAccountLink'])->name('users.account-links.store')->whereNumber('user');
+        Route::post('/users/{user}/permissions', [AccessUserWebController::class, 'permissions'])->name('users.permissions')->whereNumber('user');
+        Route::post('/users/bulk', [AccessUserWebController::class, 'bulk'])->name('users.bulk');
+        Route::get('/users/export', [AccessUserWebController::class, 'export'])->name('users.export');
+        Route::get('/users/import', [AccessUserWebController::class, 'importForm'])->name('users.import');
+        Route::post('/users/import', [AccessUserWebController::class, 'importPreview'])->name('users.import.preview');
+        Route::post('/users/import/commit', [AccessUserWebController::class, 'importCommit'])->name('users.import.commit');
+
+        Route::get('/departments', [AccessOrgWebController::class, 'departments'])->name('departments.index');
+        Route::get('/departments/{department}', [AccessOrgWebController::class, 'showDepartment'])->name('departments.show');
+        Route::post('/departments', [AccessOrgWebController::class, 'storeDepartment'])->name('departments.store');
+        Route::put('/departments/{department}', [AccessOrgWebController::class, 'updateDepartment'])->name('departments.update');
+        Route::get('/roles', [AccessOrgWebController::class, 'roles'])->name('roles.index');
+        Route::post('/roles', [AccessOrgWebController::class, 'storeRole'])->name('roles.store');
+        Route::put('/roles/{role}', [AccessOrgWebController::class, 'updateRole'])->name('roles.update');
+        Route::get('/permissions', [AccessOrgWebController::class, 'permissions'])->name('permissions.index');
+        Route::put('/permissions/roles/{role}', [AccessOrgWebController::class, 'updateRolePermissions'])->name('permissions.roles.update');
+        Route::get('/sessions', [AccessOrgWebController::class, 'sessions'])->name('sessions.index');
+        Route::post('/sessions/{id}/revoke', [AccessOrgWebController::class, 'revokeSession'])->name('sessions.revoke');
+        Route::post('/users/{user}/sessions/revoke', [AccessOrgWebController::class, 'revokeUserSessions'])->name('sessions.revoke-user')->whereNumber('user');
+        Route::get('/activity', [AccessOrgWebController::class, 'activity'])->name('activity.index');
+        Route::get('/availability', [AccessOrgWebController::class, 'availability'])->name('availability.index');
+        Route::post('/availability/{user}', [AccessOrgWebController::class, 'updateAvailability'])->name('availability.update')->whereNumber('user');
+        Route::get('/assignments', [AccessOrgWebController::class, 'assignments'])->name('assignments.index');
+        Route::get('/assignments/{ticket}/history', [AccessOrgWebController::class, 'assignmentHistory'])->name('assignments.history')->whereNumber('ticket');
+        Route::get('/settings', [AccessOrgWebController::class, 'settings'])->name('settings.index');
+        Route::post('/settings', [AccessOrgWebController::class, 'updateSettings'])->name('settings.update');
+        Route::get('/reports', [AccessOrgWebController::class, 'reports'])->name('reports.index');
+    });
+
+    Route::middleware('can.permission:tickets.view')->prefix('/workspace')->name('workspace.')->group(function () {
+        Route::get('/dashboard', [SupportWorkspaceWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('/supervisor', [SupportWorkspaceWebController::class, 'supervisor'])->name('supervisor');
+        Route::get('/tickets', [SupportWorkspaceWebController::class, 'myTickets'])->name('tickets');
+        Route::get('/department-queue', [SupportWorkspaceWebController::class, 'departmentQueue'])->name('department');
+        Route::get('/sla', [SupportWorkspaceWebController::class, 'sla'])->name('sla');
+        Route::get('/notifications', [SupportWorkspaceWebController::class, 'notifications'])->name('notifications');
+    });
 
     Route::get('menus', [MenuController::class, 'index'])->name('menus.index');
     Route::get('menus/{menu}/builder', [MenuController::class, 'builder'])->name('menus.builder');

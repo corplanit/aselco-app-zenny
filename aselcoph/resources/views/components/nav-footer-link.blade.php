@@ -5,6 +5,9 @@
 <div id="responsive-overlay"></div> --}}
 <!-- Scroll To Top -->
 <script src="/assets/js/switch.js"></script>
+<script src="/assets/js/page-clock.js"></script>
+<script src="/assets/js/page-header-actions.js"></script>
+<script src="/assets/js/menu-search.js"></script>
 <script src="/assets/libs/@popperjs/core/umd/popper.min.js"></script>
 <script src="/assets/js/defaultmenu.min.js"></script>
 <script src="/assets/libs/node-waves/waves.min.js"></script>

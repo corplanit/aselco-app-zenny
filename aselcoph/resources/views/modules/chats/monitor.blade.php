@@ -274,7 +274,9 @@
                                         <form method="POST"
                                             action=""
                                             class="inline-flex"
-                                            onsubmit="return confirm('Are you sure you want to change the status of this conversation?');">
+                                            data-ul-confirm="Change the status of this conversation."
+                                            data-ul-confirm-verb="Change"
+                                            data-ul-confirm-icon="bi-slash-circle">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit"
@@ -288,7 +290,10 @@
                                         {{-- {{ route('conversations.destroy', $conv->id) }} --}}
                                         <form method="POST" action="" 
                                             class="inline-flex"
-                                            onsubmit="return confirm('Permanently delete this conversation and its messages?');">
+                                            data-ul-confirm="Permanently delete this conversation and its messages."
+                                            data-ul-confirm-verb="Delete"
+                                            data-ul-confirm-tone="danger"
+                                            data-ul-confirm-icon="bi-trash">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"

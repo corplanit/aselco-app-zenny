@@ -287,14 +287,20 @@
 
                                         <script>
                                             document.querySelectorAll('.privacy-toggle').forEach(button => {
-                                                button.addEventListener('click', function() {
+                                                button.addEventListener('click', async function() {
                                                     const fileId = this.dataset.id;
                                                     const currentStatus = this.dataset.status;
                                                     const newStatus = currentStatus === 'public' ? 'private' : 'public';
-                                                    const confirmMessage =
-                                                        `Are you sure you want to make this file ${newStatus.toUpperCase()}?`;
+                                                    const verb = newStatus === 'public' ? 'Make public' : 'Make private';
+                                                    const confirmed = window.ulConfirm
+                                                        ? await window.ulConfirm({
+                                                            verb,
+                                                            text: `Change this file to ${newStatus}.`,
+                                                            icon: newStatus === 'public' ? 'bi-unlock' : 'bi-lock',
+                                                        })
+                                                        : window.confirm(`Are you sure you want to make this file ${newStatus.toUpperCase()}?`);
 
-                                                    if (!window.confirm(confirmMessage)) {
+                                                    if (!confirmed) {
                                                         return; // Stop if the user cancels
                                                     }
 

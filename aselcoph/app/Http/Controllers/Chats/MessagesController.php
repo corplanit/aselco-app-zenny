@@ -15,10 +15,17 @@ use Illuminate\Support\Facades\Storage;
 
 use App\Events\MessageSent;
 use App\Events\ConversationUpdated;
+use App\Services\NotificationDispatchService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class MessagesController extends Controller
 {
+    public function __construct(private NotificationDispatchService $notifications)
+    {
+    }
+
     // GET /chats/{conversation}/messages?before_id=123
     public function index(Request $request, Conversation $conversation)
     {
@@ -91,8 +98,49 @@ class MessagesController extends Controller
                 broadcast(new ConversationUpdated($conversation->fresh(), $pid, $unread));
             }
 
+            $this->pushChatNotifications($user, $conversation, $msg, $participantIds);
+
             return response()->json($msg->load('user'));
         });
+    }
+
+    /**
+     * @param  array<int, int|string>  $participantIds
+     */
+    private function pushChatNotifications($user, Conversation $conversation, $msg, array $participantIds): void
+    {
+        $preview = trim((string) ($msg->body ?? ''));
+        if ($preview === '') {
+            $preview = 'New message';
+        }
+        if (mb_strlen($preview) > 140) {
+            $preview = mb_substr($preview, 0, 137).'…';
+        }
+
+        $senderName = $user->name ?? 'User';
+        $title = $conversation->is_group
+            ? ($conversation->name ?: 'Group chat')
+            : $senderName;
+
+        foreach ($participantIds as $pid) {
+            if ((int) $pid === (int) $user->id) {
+                continue;
+            }
+
+            try {
+                $this->notifications->notifyChat((int) $pid, $title, $preview, [
+                    'conversation_id' => (string) $conversation->id,
+                    'message_id' => (string) $msg->id,
+                    'deep_link' => '/support/chat',
+                ]);
+            } catch (Throwable $e) {
+                Log::warning('chat.push_failed', [
+                    'conversation_id' => $conversation->id,
+                    'recipient_id' => $pid,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function createConversation(Request $request)

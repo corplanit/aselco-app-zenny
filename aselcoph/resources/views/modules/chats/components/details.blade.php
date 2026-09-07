@@ -382,6 +382,14 @@
             return 'bi bi-file-earmark';
         }
         async function ask(title, text, confirmText) {
+            if (window.ulConfirm) {
+                return window.ulConfirm({
+                    title: confirmText || title,
+                    verb: confirmText || title,
+                    text,
+                    tone: /delete|remove|revoke|reset/i.test(`${title} ${confirmText}`) ? 'danger' : 'primary',
+                });
+            }
             if (window.Swal?.fire) {
                 const r = await Swal.fire({
                     title,

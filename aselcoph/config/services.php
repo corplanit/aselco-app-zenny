@@ -50,4 +50,10 @@ return [
         'project_id' => env('FIREBASE_PROJECT_ID'),
         'credentials' => env('FIREBASE_CREDENTIALS'),
     ],
+
+    'sms' => [
+        'webhook_url' => env('SMS_WEBHOOK_URL'),
+        'token' => env('SMS_WEBHOOK_TOKEN'),
+        'sender' => env('SMS_SENDER'),
+    ],
 ];

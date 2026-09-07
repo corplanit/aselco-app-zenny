@@ -17,6 +17,10 @@ class AccountLink extends Model
         'validated_by',
     ];
 
+    protected $casts = [
+        'validated_at' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -14,6 +14,7 @@ interface BalanceCardProps {
   wallet: TokenWallet;
   walletIsDemo?: boolean;
   accountBalances?: AccountBalanceRow[];
+  onWalletClick?: () => void;
 }
 
 function tokens(amount: number): string {
@@ -29,6 +30,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   wallet,
   walletIsDemo = true,
   accountBalances = [],
+  onWalletClick,
 }) => {
   const known = accountBalances.filter((row) => row.currentBalance != null);
   const total = known.reduce((sum, row) => sum + (row.currentBalance ?? 0), 0);
@@ -36,13 +38,18 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
 
   return (
     <div className="dash-cards">
-      <section className="dash-card dash-card--ast" aria-label="Remaining ASELCO Tokens">
+      <section
+        className="dash-card dash-card--ast"
+        aria-label="Remaining ASELCO Tokens"
+        onClick={onWalletClick}
+        style={onWalletClick ? { cursor: 'pointer' } : undefined}
+      >
         <div className="dash-card__top">
           <span className="dash-card__badge">
             <IonIcon icon={walletOutline} />
             Wallet
           </span>
-          {walletIsDemo ? <span className="dash-card__chip">Demo</span> : null}
+          <span className="dash-card__chip">{walletIsDemo ? 'Demo' : 'View'}</span>
         </div>
         <p className="dash-card__label">Remaining AST</p>
         <p className="dash-card__amount">{tokens(wallet.balance)}</p>

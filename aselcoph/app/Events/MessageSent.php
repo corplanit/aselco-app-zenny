@@ -18,8 +18,7 @@ class MessageSent implements ShouldBroadcastNow
 
     public function __construct(Message $message, array $users)
     {
-        // Eager-load what the UI needs
-        $this->message = $message->load('user', 'attachments', 'reactions');
+        $this->message = $message->loadMissing('user');
         $this->users   = $users;
     }
 

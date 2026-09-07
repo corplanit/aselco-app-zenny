@@ -985,6 +985,79 @@ ion-content {
   gap: 12px;
 }
 
+.assistant-card__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.assistant-card__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--aselco-ink-600, #4b5563);
+}
+
+.assistant-reset {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--aselco-green-800);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.assistant-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.assistant-toolbar__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid rgba(14, 124, 58, 0.28);
+  background: #fff;
+  color: var(--aselco-green-800);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.assistant-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.assistant-error-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.assistant-retry {
+  appearance: none;
+  border: 1px solid rgba(138, 31, 31, 0.35);
+  background: #fff;
+  color: #8a1f1f;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
 .assistant-avatar {
   position: relative;
   width: 48px;
@@ -1124,4 +1197,37 @@ ion-content {
 
 .assistant-send ion-icon {
   font-size: 18px;
+}
+
+.assistant-next {
+  appearance: none;
+  display: inline-flex;
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(14, 124, 58, 0.28);
+  background: #fff;
+  color: var(--aselco-green-800);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assistant-error {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #8a1f1f;
+}
+
+.assistant-typing {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.assistant-citations {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--aselco-ink-600, #4b5563);
+  line-height: 1.35;
 }

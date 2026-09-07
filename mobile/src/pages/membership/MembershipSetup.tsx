@@ -18,28 +18,33 @@ import {
   eyeOutline,
   linkOutline,
   logOutOutline,
+  personOutline,
   shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { getMembershipPrivacy } from '../../api/membership';
-import { ApiError } from '../../api/types';
+import { ApiError, type StoreMemberProfilePayload } from '../../api/types';
 import { useAuth } from '../../auth/AuthContext';
 import { useMembership } from '../../membership/MembershipContext';
 import logoTag from '../../assets/logo_tag.png';
 import '../Auth.css';
 import './MembershipSetup.css';
+import PersonalInformationForm from './PersonalInformationForm';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 const MembershipSetup: React.FC = () => {
-  const { token, signOut } = useAuth();
+  const { token, signOut, user } = useAuth();
   const {
     submitLink,
+    saveProfile,
     needsMembershipStepper,
+    hasPersonalInfo,
     linkCount,
     canAddAnotherLink,
     markStepperComplete,
+    profile,
   } = useMembership();
   const history = useHistory();
   const location = useLocation();
@@ -76,6 +81,16 @@ const MembershipSetup: React.FC = () => {
     submittedCount,
     history,
   ]);
+
+  useEffect(() => {
+    if (isAddMode || doneMessage || submittedCount > 0) {
+      return;
+    }
+    if (linkCount > 0 && !hasPersonalInfo && step < 3) {
+      setStep(3);
+      setPrivacyAccepted(true);
+    }
+  }, [isAddMode, doneMessage, submittedCount, linkCount, hasPersonalInfo, step]);
 
   useEffect(() => {
     if (!token) {
@@ -134,11 +149,17 @@ const MembershipSetup: React.FC = () => {
       });
       const nextCount = result.link_count ?? submittedCount + 1;
       setSubmittedCount(nextCount);
-      setDoneMessage(
-        nextCount >= 2
-          ? '2 account link requests submitted. You can open the dashboard now.'
-          : 'Account link request submitted. You can open the dashboard, or add one more account (max 2).',
-      );
+      const alreadyHasProfile = result.has_personal_info ?? hasPersonalInfo;
+      if (isAddMode || alreadyHasProfile) {
+        setDoneMessage(
+          nextCount >= 2
+            ? 'Account link request submitted. You can return to your profile now.'
+            : 'Account link request submitted. You can add one more account later from Profile.',
+        );
+        setStep(4);
+        return;
+      }
+      setError(null);
       setStep(3);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -149,6 +170,33 @@ const MembershipSetup: React.FC = () => {
         setError(err.message || 'Could not submit membership information.');
       } else {
         setError('Could not submit membership information. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onSavePersonalInfo = async (payload: StoreMemberProfilePayload) => {
+    setSubmitting(true);
+    setError(null);
+    setFieldErrors({});
+
+    try {
+      await saveProfile(payload);
+      setDoneMessage(
+        displayLinkCount > 0
+          ? 'Membership application details saved. Staff will validate your account link against cooperative records.'
+          : 'Personal information saved.',
+      );
+      setStep(4);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.data.errors) {
+          setFieldErrors(err.data.errors);
+        }
+        setError(err.message || 'Could not save personal information.');
+      } else {
+        setError('Could not save personal information. Please try again.');
       }
     } finally {
       setSubmitting(false);
@@ -174,7 +222,13 @@ const MembershipSetup: React.FC = () => {
     history.replace('/login');
   };
 
-  const stepIcon = [shieldCheckmarkOutline, linkOutline, eyeOutline, checkmarkCircleOutline][step];
+  const stepIcon = [
+    shieldCheckmarkOutline,
+    linkOutline,
+    eyeOutline,
+    personOutline,
+    checkmarkCircleOutline,
+  ][step];
 
   return (
     <IonPage>
@@ -190,7 +244,7 @@ const MembershipSetup: React.FC = () => {
             <p className="auth-brand__sub">
               {isAddMode
                 ? 'Add a second electric account (maximum 2).'
-                : 'Link 1–2 electric accounts to unlock the member dashboard.'}
+                : 'Link an electric account, then add your membership personal information.'}
             </p>
           </div>
 
@@ -289,7 +343,7 @@ const MembershipSetup: React.FC = () => {
                         history.replace('/tabs/profile');
                         return;
                       }
-                      setStep(displayLinkCount > 0 ? 3 : 0);
+                      setStep(displayLinkCount > 0 ? 4 : 0);
                     }}
                   >
                     Back
@@ -329,12 +383,24 @@ const MembershipSetup: React.FC = () => {
             )}
 
             {step === 3 && (
+              <PersonalInformationForm
+                initial={profile}
+                contactFallback={user?.contact_no}
+                submitting={submitting}
+                error={error}
+                fieldErrors={fieldErrors}
+                onSubmit={(payload) => void onSavePersonalInfo(payload)}
+              />
+            )}
+
+            {step === 4 && (
               <>
                 <h2 className="membership-step-title">Request submitted</h2>
                 <p className="membership-done">{doneMessage}</p>
                 <p className="membership-hint">
                   Linked accounts: {displayLinkCount}/2. Staff will validate against cooperative
-                  records. Dashboard is available after your first submission.
+                  records. Dashboard is available after your first account and personal information
+                  are submitted.
                 </p>
                 {canAddAnotherLink && displayLinkCount < 2 && (
                   <IonButton
@@ -354,7 +420,7 @@ const MembershipSetup: React.FC = () => {
           </div>
 
           <button type="button" className="membership-signout" onClick={onSignOut}>
-            <IonIcon icon={logOutOutline} /> Sign out A net pod is late. See David's. Yeah, almost served. Need Dabby. Hope in a booking. One area's whiskey advantage. I'm buying no Facebook. Looking for Walker. Five thousand budget. Five thousand. My H A V maintenance virus for an element or divorce. Feeding counseling awards. Eight hundred equal Starbucks. Domingo. you know
+            <IonIcon icon={logOutOutline} /> Sign out
           </button>
         </div>
       </IonContent>

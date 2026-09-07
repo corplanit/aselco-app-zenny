@@ -1,0 +1,269 @@
+{
+  "info": {
+    "name": "ASELCO API v1",
+    "description": "Phases 2–6 wallet, tickets, notifications, plus membership. Import into Postman. Set baseUrl (e.g. http://localhost:8000/api/v1) and token after login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "ticketId", "value": "1" },
+    { "key": "customerId", "value": "1" },
+    { "key": "billingId", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Meta",
+      "item": [
+        { "name": "Version", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/meta" } },
+        { "name": "OpenAPI JSON", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/openapi.json" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const j = pm.response.json();",
+                "if (j.token) { pm.collectionVariables.set('token', j.token); }"
+              ]
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"member@example.com\",\n  \"password\": \"password\",\n  \"device_name\": \"postman\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        { "name": "Current user", "request": { "method": "GET", "url": "{{baseUrl}}/auth/user" } },
+        { "name": "Logout", "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" } }
+      ]
+    },
+    {
+      "name": "Customer Service",
+      "item": [
+        { "name": "Membership status", "request": { "method": "GET", "url": "{{baseUrl}}/membership/status" } },
+        { "name": "Membership profile", "request": { "method": "GET", "url": "{{baseUrl}}/membership/profile" } },
+        {
+          "name": "Save membership profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"region_code\": \"160000000\",\n  \"region_name\": \"Caraga\",\n  \"province_code\": \"160300000\",\n  \"province_name\": \"Agusan del Sur\",\n  \"city_municipality_code\": \"160301000\",\n  \"city_municipality_name\": \"San Francisco\",\n  \"barangay_code\": \"160301001\",\n  \"barangay_name\": \"Poblacion\",\n  \"street\": \"Rizal Street\",\n  \"sitio\": \"Purok 1\",\n  \"civil_status\": \"married\",\n  \"sex\": \"female\",\n  \"contact_no\": \"09171234567\",\n  \"date_of_seminar\": null,\n  \"remarks\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/membership/profile"
+          }
+        },
+        { "name": "Dashboard summary", "request": { "method": "GET", "url": "{{baseUrl}}/dashboard/summary" } },
+        { "name": "Ledger", "request": { "method": "GET", "url": "{{baseUrl}}/ledger" } }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        { "name": "Customer balance", "request": { "method": "GET", "url": "{{baseUrl}}/customer/wallet/balance" } },
+        { "name": "Customer transactions", "request": { "method": "GET", "url": "{{baseUrl}}/customer/wallet/transactions?per_page=15" } },
+        {
+          "name": "Pay bill with AST",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"billing_id\": {{billingId}},\n  \"amount\": 100.00\n}" },
+            "url": "{{baseUrl}}/customer/wallet/pay-bill"
+          }
+        },
+        { "name": "Admin wallet summary", "request": { "method": "GET", "url": "{{baseUrl}}/admin/wallet/summary" } },
+        {
+          "name": "Admin load AST",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"customer_id\": {{customerId}},\n  \"amount\": 50,\n  \"reference_no\": \"AST-REF-1\",\n  \"remarks\": \"Postman load\",\n  \"idempotency_key\": \"{{$guid}}\"\n}" },
+            "url": "{{baseUrl}}/admin/wallet/load"
+          }
+        },
+        { "name": "Admin load requests", "request": { "method": "GET", "url": "{{baseUrl}}/admin/wallet/load-requests?status=pending" } }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Create customer ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category_id\": 2,\n  \"description\": \"Power interruption on our feeder.\"\n}" },
+            "url": "{{baseUrl}}/customer/tickets"
+          }
+        },
+        { "name": "List my tickets", "request": { "method": "GET", "url": "{{baseUrl}}/customer/tickets" } },
+        { "name": "Show my ticket", "request": { "method": "GET", "url": "{{baseUrl}}/customer/tickets/{{ticketId}}" } },
+        {
+          "name": "Customer feedback",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"method\": \"message\",\n  \"customer_confirmed\": true,\n  \"notes\": \"Restored\"\n}" },
+            "url": "{{baseUrl}}/customer/tickets/{{ticketId}}/feedback"
+          }
+        },
+        { "name": "Admin queue", "request": { "method": "GET", "url": "{{baseUrl}}/admin/tickets?per_page=20" } },
+        { "name": "Admin show", "request": { "method": "GET", "url": "{{baseUrl}}/admin/tickets/{{ticketId}}" } },
+        {
+          "name": "Endorse",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/endorse"
+          }
+        },
+        {
+          "name": "Log action",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action_taken\": \"Crew restored line\",\n  \"minutes_taken\": 20\n}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/actions"
+          }
+        },
+        {
+          "name": "CSR feedback",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"method\": \"call\",\n  \"customer_confirmed\": true,\n  \"needs_further_action\": false,\n  \"notes\": \"Confirmed\"\n}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/feedback"
+          }
+        },
+        { "name": "AI dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/admin/tickets/ai/dashboard" } },
+        { "name": "AI analysis show", "request": { "method": "GET", "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/ai" } },
+        { "name": "AI analyze", "request": { "method": "POST", "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/ai/analyze" } },
+        {
+          "name": "AI apply priority",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Safety risk confirmed\"\n}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/ai/apply-priority"
+          }
+        },
+        {
+          "name": "AI suggest response",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"guidance\": \"Ask for account number politely\"\n}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/ai/suggest-response"
+          }
+        },
+        {
+          "name": "AI review draft",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"decision\": \"approve\",\n  \"edited_body\": \"Thank you. Please share your account number.\"\n}" },
+            "url": "{{baseUrl}}/admin/tickets/{{ticketId}}/ai/drafts/{{draftId}}/review"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Customer chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"How do I pay my bill with AST?\"\n}" },
+            "url": "{{baseUrl}}/customer/ai/chat"
+          }
+        },
+        {
+          "name": "Customer inquiry",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"Power interruption on our feeder.\"\n}" },
+            "url": "{{baseUrl}}/customer/ai/inquiry"
+          }
+        },
+        { "name": "List conversations", "request": { "method": "GET", "url": "{{baseUrl}}/customer/ai/conversations" } },
+        { "name": "AI bootstrap", "request": { "method": "GET", "url": "{{baseUrl}}/customer/ai/bootstrap" } },
+        {
+          "name": "Escalate to ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category_hint\": \"FOCAL\",\n  \"description\": \"Need CSR follow-up from AI assistant.\"\n}" },
+            "url": "{{baseUrl}}/customer/ai/escalate"
+          }
+        },
+        {
+          "name": "Admin assist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"Draft a reply for a billing overcharge complaint.\",\n  \"ticket_id\": null\n}" },
+            "url": "{{baseUrl}}/admin/ai/assist"
+          }
+        },
+        {
+          "name": "Customer knowledge search",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"How do I pay with AST?\"\n}" },
+            "url": "{{baseUrl}}/customer/ai/search"
+          }
+        },
+        { "name": "Admin knowledge list", "request": { "method": "GET", "url": "{{baseUrl}}/admin/knowledge" } },
+        {
+          "name": "Admin knowledge search",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"complaint handling procedure\"\n}" },
+            "url": "{{baseUrl}}/admin/knowledge/search"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } },
+        { "name": "Preferences", "request": { "method": "GET", "url": "{{baseUrl}}/notification-preferences" } },
+        {
+          "name": "Register device",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"FCM_DEVICE_TOKEN\",\n  \"platform\": \"android\"\n}" },
+            "url": "{{baseUrl}}/devices"
+          }
+        }
+      ]
+    }
+  ]
+}

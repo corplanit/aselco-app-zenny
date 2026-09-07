@@ -223,7 +223,7 @@
             </div>
         </div>
         <!-- Input -->
-        <form id="chat-form" class="p-3 border-t flex gap-2 bg-white" autocomplete="off">
+        <form id="chat-form" class="ul-no-busy p-3 border-t flex gap-2 bg-white" autocomplete="off">
             <input type="text" id="chat-input" placeholder="Write a reply.."
                 class="flex-1 border rounded-full px-4 py-2 text-sm">
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm">➤</button>

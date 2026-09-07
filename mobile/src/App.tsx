@@ -11,12 +11,16 @@ import Login from './pages/Login';
 import MainTabs from './pages/MainTabs';
 import MembershipSetup from './pages/membership/MembershipSetup';
 import Notifications from './pages/Notifications';
+import WalletHome from './pages/WalletHome';
+import WalletTransactionDetail from './pages/WalletTransactionDetail';
 import Splash from './pages/onboarding/Splash';
 import Walkthrough from './pages/onboarding/Walkthrough';
 import Welcome from './pages/onboarding/Welcome';
 import Register from './pages/Register';
 import Support from './pages/Support';
+import SupportChat from './pages/SupportChat';
 import { initializePushNotifications } from './notifications/pushNotifications';
+import TicketDetail from './pages/TicketDetail';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -121,9 +125,13 @@ const AppRoutes: React.FC = () => {
         <>
           <Route path="/tabs" component={MainTabs} />
           <Route exact path="/notifications" component={Notifications} />
+          <Route exact path="/wallet" component={WalletHome} />
+          <Route exact path="/wallet/transactions/:id" component={WalletTransactionDetail} />
           <Route exact path="/assistant" component={Assistant} />
           <Route exact path="/complaints" component={Complaints} />
+          <Route exact path="/tickets/:id" component={TicketDetail} />
           <Route exact path="/support" component={Support} />
+          <Route exact path="/support/chat" component={SupportChat} />
           <Route exact path="/membership/setup" component={MembershipSetup} />
           <Route exact path="/login">
             <Redirect to="/tabs/home" />

@@ -41,7 +41,7 @@
                                             messaging, or create a new one.</p>
                                     </div>
                                 </div>
-                                <form id="chat-form" class="border-t p-4 flex gap-2 hidden">
+                                <form id="chat-form" class="ul-no-busy border-t p-4 flex gap-2 hidden">
                                     <input type="text" id="chat-input" placeholder="Type your reply"
                                         class="flex-1 border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                                     <button type="submit"

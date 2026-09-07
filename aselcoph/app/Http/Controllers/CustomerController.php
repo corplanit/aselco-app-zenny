@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\blogModel;
 use App\Models\TAccountRaw;
+use App\Support\ListQuery;
 use Illuminate\Http\Request;
 
 // composer require yajra/laravel-datatables-oracle
@@ -15,12 +16,76 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
-    public static function index()
+    public function index(Request $request): View
     {
-        return view('pages.customer.index');
+        $sortable = [
+            'account_no' => 't_accounts_raw.account_no',
+            'customer' => 't_accounts_raw.customer',
+            'status' => 't_accounts_raw.status',
+            'email' => 'users.email',
+        ];
+        $list = ListQuery::from($request, ['status', 'portal'], $sortable, 'customer', 'asc');
+
+        $query = TAccountRaw::query()
+            ->from('t_accounts_raw')
+            ->where('t_accounts_raw.isDeleted', 0)
+            ->leftJoin('users', 't_accounts_raw.user_id', '=', 'users.id')
+            ->select([
+                't_accounts_raw.account_no',
+                't_accounts_raw.customer',
+                't_accounts_raw.user_id',
+                't_accounts_raw.status',
+                'users.email',
+                'users.contact_no as contact',
+            ]);
+
+        if ($list['search'] && mb_strlen($list['search']) >= 2) {
+            $term = $list['search'];
+            $contains = '%'.$term.'%';
+            $prefix = $term.'%';
+            $accountLike = (bool) preg_match('/^[0-9][0-9\-]*$/', $term);
+            $query->where(function ($q) use ($contains, $prefix, $accountLike) {
+                if ($accountLike) {
+                    $q->where('t_accounts_raw.account_no', 'like', $prefix);
+                } else {
+                    $q->where('t_accounts_raw.customer', 'like', $prefix)
+                        ->orWhere('users.email', 'like', $contains)
+                        ->orWhere('users.contact_no', 'like', $contains);
+                }
+            });
+        }
+
+        if (! empty($list['filters']['status'])) {
+            $query->where('t_accounts_raw.status', $list['filters']['status']);
+        }
+
+        if (($list['filters']['portal'] ?? '') === 'linked') {
+            $query->whereNotNull('t_accounts_raw.user_id');
+        } elseif (($list['filters']['portal'] ?? '') === 'unlinked') {
+            $query->whereNull('t_accounts_raw.user_id');
+        }
+
+        ListQuery::applySort($query, $list, $sortable);
+
+        $statuses = TAccountRaw::query()
+            ->where('isDeleted', 0)
+            ->whereNotNull('status')
+            ->where('status', '!=', '')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status');
+
+        return view('pages.customer.index', [
+            'consumers' => $query->paginate($list['per_page'])->withQueryString(),
+            'list' => $list,
+            'filters' => array_merge($list['filters'], ['search' => $list['search']]),
+            'activeFilterCount' => $list['active_filter_count'],
+            'statuses' => $statuses->isEmpty() ? collect(['Linked', 'Inactive']) : $statuses,
+        ]);
     }
 
     public static function create()

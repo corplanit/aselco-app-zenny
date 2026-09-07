@@ -14,14 +14,14 @@ import Pusher from 'pusher-js';
 
 window.Pusher = Pusher;
 
-// Production-ready Echo instance
+// Production-ready Echo instance (Pusher Cloud — do not override wsHost)
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,                    // Your Pusher key
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'ap1',   // Default cluster
+    key: import.meta.env.VITE_PUSHER_APP_KEY,
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'ap1',
     forceTLS: (import.meta.env.VITE_PUSHER_USETLS ?? 'true') === 'true',
-    encrypted: true,                                             // Always encrypt
-    authEndpoint: '/broadcasting/auth',                          // Private channel auth
+    encrypted: true,
+    authEndpoint: '/broadcasting/auth',
     auth: {
         headers: {
             'X-CSRF-TOKEN': document
@@ -29,11 +29,8 @@ window.Echo = new Echo({
                 ?.getAttribute('content'),
         },
     },
-    // Optional: fallback transports for older browsers
-    wsHost: window.location.hostname,
-    wsPort: 6001,
-    wssPort: 6001,
     disableStats: true,
+    enabledTransports: ['ws', 'wss'],
 });
 
 // --------------------
@@ -57,12 +54,12 @@ window.Echo.connector.pusher.connection.bind('disconnected', () => {
 // Helper: Subscribe to private chat channels
 // --------------------
 window.subscribeToConversation = (conversationId, callback) => {
-    return window.Echo.private(`supp.conversations.${conversationId}`)
-        .listen('supp.message.sent', callback);
+    return window.Echo.private(`conversations.${conversationId}`)
+        .listen('.message.sent', callback);
 };
 
 window.subscribeToUser = (userId, callback) => {
-    return window.Echo.private(`supp.users.${userId}`)
-        .listen('supp.conversation.updated', callback);
+    return window.Echo.private(`users.${userId}`)
+        .listen('.conversation.updated', callback);
 };
 

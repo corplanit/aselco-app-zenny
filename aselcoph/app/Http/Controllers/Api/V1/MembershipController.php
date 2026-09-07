@@ -4,10 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreAccountLinkRequest;
+use App\Http\Requests\Api\V1\StoreMemberProfileRequest;
 use App\Http\Resources\Api\V1\AccountLinkResource;
 use App\Http\Resources\Api\V1\LinkedAccountResource;
+use App\Http\Resources\Api\V1\MemberProfileResource;
 use App\Models\AccountLink;
+use App\Models\MemberProfile;
 use App\Models\TAccountRaw;
+use App\Models\User;
+use App\Services\MemberProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -16,51 +21,15 @@ class MembershipController extends Controller
 {
     public const MAX_ACCOUNT_LINKS = 10;
 
+    public function __construct(private readonly MemberProfileService $memberProfiles) {}
+
     /**
      * Dashboard unlocks after the member has submitted at least 1 account link
-     * (up to 2). Staff validation is not required to enter the dashboard.
+     * and completed personal information. Staff validation is not required.
      */
     public function status(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
-
-        $pendingCount = AccountLink::query()
-            ->where('user_id', $userId)
-            ->whereNull('validated_at')
-            ->count();
-
-        $validatedCount = AccountLink::query()
-            ->where('user_id', $userId)
-            ->whereNotNull('validated_at')
-            ->count();
-
-        $linkRequestCount = $pendingCount + $validatedCount;
-
-        $linkedCount = 0;
-        try {
-            $linkedCount = TAccountRaw::query()
-                ->where('user_id', $userId)
-                ->count();
-        } catch (Throwable) {
-            // Raw ledger table may be unavailable; account_links alone unlocks the app.
-        }
-
-        $hasAnyLinkRequest = $linkRequestCount > 0;
-        $hasLinkedAccount = $linkedCount > 0;
-
-        // At least 1 submitted account link (or an already-linked raw account) unlocks dashboard.
-        $needsStepper = ! $hasAnyLinkRequest && ! $hasLinkedAccount;
-
-        return response()->json([
-            'needs_membership_stepper' => $needsStepper,
-            'has_pending_link' => $pendingCount > 0,
-            'has_validated_link' => $validatedCount > 0 || $hasLinkedAccount,
-            'pending_count' => $pendingCount,
-            'validated_count' => $validatedCount,
-            'link_count' => $linkRequestCount,
-            'max_links' => self::MAX_ACCOUNT_LINKS,
-            'can_add_another_link' => $linkRequestCount < self::MAX_ACCOUNT_LINKS,
-        ]);
+        return response()->json($this->statusPayload($request->user()));
     }
 
     public function privacy(): JsonResponse
@@ -68,7 +37,7 @@ class MembershipController extends Controller
         return response()->json([
             'title' => 'Data Privacy Policy',
             'summary' => 'In compliance with the Data Privacy Act of 2012 (R.A. 10173).',
-            'body' => 'ASELCO collects and processes your account number and owner name to verify and link your electric service account to your member portal profile. Your information will be validated against cooperative records. By continuing, you consent to this processing for account linking and related member services.',
+            'body' => 'ASELCO collects and processes your account number, owner name, and membership application details (address, civil status, contact number, and related personal information) to verify and link your electric service account to your member portal profile. Your information will be validated against cooperative records. By continuing, you consent to this processing for account linking and related member services.',
         ]);
     }
 
@@ -86,7 +55,8 @@ class MembershipController extends Controller
 
     public function store(StoreAccountLinkRequest $request): JsonResponse
     {
-        $userId = $request->user()->id;
+        $user = $request->user();
+        $userId = $user->id;
         $accountNumber = $request->string('account_number')->toString();
         $ownerName = strtoupper(trim($request->string('owner_name')->toString()));
 
@@ -125,6 +95,7 @@ class MembershipController extends Controller
             'validated_by' => null,
         ]);
 
+        $status = $this->statusPayload($user->fresh() ?? $user);
         $linkCount = $existingCount + 1;
 
         return response()->json([
@@ -133,8 +104,34 @@ class MembershipController extends Controller
             'link_count' => $linkCount,
             'max_links' => self::MAX_ACCOUNT_LINKS,
             'can_add_another_link' => $linkCount < self::MAX_ACCOUNT_LINKS,
-            'needs_membership_stepper' => false,
+            'needs_membership_stepper' => $status['needs_membership_stepper'],
+            'has_personal_info' => $status['has_personal_info'],
         ], 201);
+    }
+
+    public function showProfile(Request $request): JsonResponse
+    {
+        $profile = MemberProfile::query()
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        return response()->json([
+            'data' => $profile ? (new MemberProfileResource($profile))->resolve() : null,
+        ]);
+    }
+
+    public function upsertProfile(StoreMemberProfileRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $profile = $this->memberProfiles->upsert($user, $request->validated());
+        $status = $this->statusPayload($user->fresh() ?? $user);
+
+        return response()->json([
+            'message' => 'Personal information saved.',
+            'data' => (new MemberProfileResource($profile))->resolve(),
+            'needs_membership_stepper' => $status['needs_membership_stepper'],
+            'has_personal_info' => $status['has_personal_info'],
+        ]);
     }
 
     public function linkedAccounts(Request $request): JsonResponse
@@ -150,5 +147,52 @@ class MembershipController extends Controller
         return response()->json([
             'data' => LinkedAccountResource::collection($accounts)->resolve(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function statusPayload(User $user): array
+    {
+        $userId = $user->id;
+
+        $pendingCount = AccountLink::query()
+            ->where('user_id', $userId)
+            ->whereNull('validated_at')
+            ->count();
+
+        $validatedCount = AccountLink::query()
+            ->where('user_id', $userId)
+            ->whereNotNull('validated_at')
+            ->count();
+
+        $linkRequestCount = $pendingCount + $validatedCount;
+
+        $linkedCount = 0;
+        try {
+            $linkedCount = TAccountRaw::query()
+                ->where('user_id', $userId)
+                ->count();
+        } catch (Throwable) {
+            // Raw ledger table may be unavailable; account_links alone unlocks the app.
+        }
+
+        $hasAnyLinkRequest = $linkRequestCount > 0;
+        $hasLinkedAccount = $linkedCount > 0;
+        $hasPersonalInfo = MemberProfile::query()->where('user_id', $userId)->exists();
+
+        $needsStepper = (! $hasAnyLinkRequest && ! $hasLinkedAccount) || ! $hasPersonalInfo;
+
+        return [
+            'needs_membership_stepper' => $needsStepper,
+            'has_pending_link' => $pendingCount > 0,
+            'has_validated_link' => $validatedCount > 0 || $hasLinkedAccount,
+            'has_personal_info' => $hasPersonalInfo,
+            'pending_count' => $pendingCount,
+            'validated_count' => $validatedCount,
+            'link_count' => $linkRequestCount,
+            'max_links' => self::MAX_ACCOUNT_LINKS,
+            'can_add_another_link' => $linkRequestCount < self::MAX_ACCOUNT_LINKS,
+        ];
     }
 }

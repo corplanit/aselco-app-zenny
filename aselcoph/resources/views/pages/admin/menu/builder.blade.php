@@ -257,7 +257,13 @@
         document.addEventListener('click', async (e) => {
             const btn = e.target.closest('[data-action="delete-item"]');
             if (!btn) return;
-            if (!confirm('Remove this menu item?')) return;
+            const removed = await window.ulConfirm({
+                verb: 'Remove',
+                text: 'Remove this menu item.',
+                tone: 'danger',
+                icon: 'bi-trash',
+            });
+            if (!removed) return;
 
             const id = btn.dataset.id;
             const res = await fetch(`{{ url('menu-items') }}/${id}`, {

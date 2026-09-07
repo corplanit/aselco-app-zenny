@@ -75,37 +75,85 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const currentURL = window.location.pathname;
+        const currentPath = (window.location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
+        const menuItems = Array.from(document.querySelectorAll(".app-sidebar .side-menu__item"));
 
-        const menuItems = document.querySelectorAll(".side-menu__item");
-
-        menuItems.forEach(item => {
+        function itemPath(item) {
             const href = item.getAttribute("href");
+            if (!href || href === "#" || href.startsWith("javascript:")) return "";
+            try {
+                const url = new URL(href, window.location.origin);
+                if (url.origin !== window.location.origin) return "";
+                return (url.pathname.replace(/\/+$/, "") || "/");
+            } catch (e) {
+                return href.split("?")[0].replace(/\/+$/, "") || "";
+            }
+        }
 
-            // Skip invalid links
-            if (!href || href === "#" || href.startsWith("javascript")) return;
+        menuItems.forEach((item) => item.classList.remove("active-menu", "active"));
 
-            // Match full URL or partial (you can tweak this logic)
-            if (currentURL === href || currentURL.startsWith(href)) {
-                // Add submenu highlight
-                item.classList.add("active-menu");
+        let best = null;
+        let bestLen = -1;
 
-                // If this item is inside a submenu, open its parent
-                const submenu = item.closest("ul.slide-menu");
-                if (submenu) {
-                    submenu.style.display = "block";
+        menuItems.forEach((item) => {
+            const path = itemPath(item).toLowerCase();
+            if (!path) return;
 
-                    const parentLi = submenu.closest("li.slide.has-sub");
-                    if (parentLi) {
-                        parentLi.classList.add("open");
+            const exact = currentPath === path;
+            const nested = path !== "/" && currentPath.startsWith(path + "/");
+            if (!exact && !nested) return;
 
-                        const parentLink = parentLi.querySelector("> a.side-menu__item");
-                        if (parentLink) {
-                            parentLink.classList.add("active-parent-menu");
-                        }
-                    }
+            if (path.length > bestLen) {
+                best = item;
+                bestLen = path.length;
+            }
+        });
+
+        if (!best) return;
+
+        best.classList.add("active-menu", "active");
+
+        const submenu = best.closest("ul.slide-menu");
+        if (submenu) {
+            submenu.style.display = "block";
+            const parentLi = submenu.closest("li.slide.has-sub");
+            if (parentLi) {
+                parentLi.classList.add("open", "active");
+                const parentLink = parentLi.querySelector(":scope > a.side-menu__item");
+                if (parentLink) {
+                    parentLink.classList.add("active-parent-menu", "active");
                 }
             }
+        }
+
+        function scrollActiveIntoView(el) {
+            const sidebar = document.getElementById("sidebar-scroll");
+            if (!sidebar || !el) return;
+
+            const scroller = sidebar.querySelector(".simplebar-content-wrapper") || sidebar;
+            const scrollerRect = scroller.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const pad = 12;
+            const fullyVisible = elRect.top >= scrollerRect.top + pad && elRect.bottom <= scrollerRect.bottom - pad;
+            if (fullyVisible) return;
+
+            const offset = elRect.top - scrollerRect.top;
+            let target = scroller.scrollTop + offset - scroller.clientHeight / 2 + el.offsetHeight / 2;
+            const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+            if (target < 0) target = 0;
+            if (target > max) target = max;
+
+            if (typeof scroller.scrollTo === "function") {
+                scroller.scrollTo({ top: target, behavior: "smooth" });
+            } else {
+                scroller.scrollTop = target;
+            }
+        }
+
+        window.requestAnimationFrame(function () {
+            window.setTimeout(function () {
+                scrollActiveIntoView(best);
+            }, 60);
         });
     });
 </script>
@@ -138,42 +186,6 @@
     }
 </style>
 
-<style>
-    .active-menu {
-        background-color: #EEF0FE !important;
-        color: #5C66F6 !important;
-        border-radius: 5px;
-        padding: 10px 15px 10px 20px;
-        margin-right: 5px;
-        transition: 0.3s ease;
-        border-top-left-radius: 0 !important;
-        border-bottom-left-radius: 0 !important;
-        position: relative;
-    }
-    .slide.has-sub .slide-menu .active-menu {
-        background-color: #EEF0FE !important;
-    }
-    .active-parent-menu {
-        background-color: #FFBC58 !important;
-        color: #5C66F6 !important;
-        font-weight: 500;
-        border-radius: 5px;
-        padding: 10px 15px 10px 20px;
-        margin-right: 5px;
-        position: relative;
-    }
-
-    .active-parent-menu::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 5px;
-        background-color: #FFBC58 !important;
-        border-radius: 5px 0 0 5px;
-    }
-</style>
 
 
 @if (session('success'))
